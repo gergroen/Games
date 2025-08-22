@@ -1,0 +1,228 @@
+@page "/tanks"
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+
+<h3>Tank Battle</h3>
+<p><small>Gamepad: Left stick / D-Pad to move, Right stick to aim, A to fire.</small></p>
+<canvas id="tankCanvas" width="640" height="400" style="background:#222;border:2px solid #555;max-width:100%;"></canvas>
+<div class="mt-2">Player HP: @player.Hp &nbsp; Enemy HP: @enemy.Hp</div>
+
+@code {
+    private DotNetObjectReference<Tanks>? _selfRef;
+    private GamepadSnapshot[] _pads = Array.Empty<GamepadSnapshot>();
+    private bool _running;
+    private PlayerTank player = new();
+    private EnemyTank enemy = new();
+    private double _lastTs;
+
+    protected override async Task OnAfterRenderAsync(bool first)
+    {
+        if (first)
+        {
+            _selfRef = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("tankGame.init", _selfRef);
+            _running = true;
+        }
+    }
+
+    [JSInvokable]
+    public async Task Frame(double ts)
+    {
+        if (!_running) return;
+        double dt = (_lastTs == 0 ? 0 : (ts - _lastTs)) / 1000.0;
+        _lastTs = ts;
+        _pads = await JS.InvokeAsync<GamepadSnapshot[]>("gamepadManager.pollGamepads");
+        HandleInput(dt);
+        UpdateAI(dt);
+        UpdateProjectiles(dt);
+        CheckCollisions();
+        await JS.InvokeVoidAsync("tankGame.draw", player, enemy, _projectiles);
+        if (player.Hp <= 0 || enemy.Hp <= 0)
+        {
+            _running = false;
+            await JS.InvokeVoidAsync("tankGame.gameOver", player.Hp > 0 ? "Player Wins!" : "Enemy Wins!");
+        }
+        else
+        {
+            // removed JS scheduling call; loop handled in JS
+        }
+        StateHasChanged();
+    }
+
+    private List<Projectile> _projectiles = new();
+
+    private void HandleInput(double dt)
+    {
+        if (_pads.Length == 0)
+        {
+            // keyboard fallback (WASD + Space)
+            // we need JS to capture keys; quick poll via interop not added yet
+            return;
+        }
+        var p = _pads[0];
+        double moveX = 0, moveY = 0;
+        if (p.Axes.Length >= 2)
+        {
+            moveX = Dead(p.Axes[0]);
+            moveY = Dead(p.Axes[1]);
+        }
+        // D-Pad fallback (buttons 12 up,13 down,14 left,15 right standard mapping)
+        if (moveX == 0 && (Pressed(p, 14))) moveX = -1;
+        if (moveX == 0 && (Pressed(p, 15))) moveX = 1;
+        if (moveY == 0 && (Pressed(p, 12))) moveY = -1;
+        if (moveY == 0 && (Pressed(p, 13))) moveY = 1;
+
+        player.X += moveX * player.Speed * dt;
+        player.Y += moveY * player.Speed * dt;
+        Clamp(player);
+
+        // Aim with right stick
+        double aimX = 0, aimY = 0;
+        if (p.Axes.Length >= 4)
+        {
+            aimX = Dead(p.Axes[2]);
+            aimY = Dead(p.Axes[3]);
+        }
+        if (Math.Abs(aimX) > 0 || Math.Abs(aimY) > 0)
+        {
+            player.Angle = Math.Atan2(aimY, aimX);
+        }
+
+        if (Pressed(p, 0) && _canFire)
+        {
+            Fire(player);
+        }
+
+        _fireCooldown -= dt;
+        if (_fireCooldown <= 0) { _canFire = true; }
+    }
+
+    private bool _canFire = true;
+    private double _fireCooldown = 0;
+
+    private void Fire(Tank t)
+    {
+        _canFire = false;
+        _fireCooldown = 0.35; // seconds
+        _projectiles.Add(new Projectile
+        {
+            X = t.X + Math.Cos(t.Angle) * 20,
+            Y = t.Y + Math.Sin(t.Angle) * 20,
+            Angle = t.Angle,
+            Speed = 300,
+            Owner = t.IsPlayer ? 1 : 2
+        });
+    }
+
+    private void UpdateProjectiles(double dt)
+    {
+        for (int i = _projectiles.Count - 1; i >= 0; i--)
+        {
+            var pr = _projectiles[i];
+            pr.X += Math.Cos(pr.Angle) * pr.Speed * dt;
+            pr.Y += Math.Sin(pr.Angle) * pr.Speed * dt;
+            if (pr.X < 0 || pr.Y < 0 || pr.X > 640 || pr.Y > 400)
+                _projectiles.RemoveAt(i);
+        }
+    }
+
+    private void UpdateAI(double dt)
+    {
+        // Simple AI: move toward player & circle
+        double dx = player.X - enemy.X;
+        double dy = player.Y - enemy.Y;
+        double dist = Math.Sqrt(dx * dx + dy * dy) + 0.001;
+        enemy.Angle = Math.Atan2(dy, dx);
+
+        if (dist > 160)
+        {
+            enemy.X += Math.Cos(enemy.Angle) * enemy.Speed * dt; enemy.Y += Math.Sin(enemy.Angle) * enemy.Speed *
+        dt;
+        }
+        else if (dist < 110)
+        {
+            enemy.X -= Math.Cos(enemy.Angle) * enemy.Speed * dt; enemy.Y -= Math.Sin(enemy.Angle) *
+        enemy.Speed * dt;
+        }
+        else
+        {
+            // strafe
+            enemy.X += Math.Cos(enemy.Angle + Math.PI / 2) * enemy.Speed * 0.6 * dt;
+            enemy.Y += Math.Sin(enemy.Angle + Math.PI / 2) * enemy.Speed * 0.6 * dt;
+        }
+        Clamp(enemy);
+
+        _enemyFireTimer -= dt;
+        if (_enemyFireTimer <= 0)
+        {
+            Fire(enemy);
+            _enemyFireTimer = 0.8 + _rand.NextDouble() * 0.7; // varied fire rate
+        }
+    }
+
+    private double _enemyFireTimer = 1;
+    private Random _rand = new();
+
+    private void CheckCollisions()
+    {
+        for (int i = _projectiles.Count - 1; i >= 0; i--)
+        {
+            var pr = _projectiles[i];
+            if (pr.Owner == 1 && Hit(pr, enemy)) { enemy.Hp -= 10; _projectiles.RemoveAt(i); continue; }
+            if (pr.Owner == 2 && Hit(pr, player)) { player.Hp -= 10; _projectiles.RemoveAt(i); continue; }
+        }
+    }
+
+    private bool Hit(Projectile pr, Tank t)
+    {
+        double dx = pr.X - t.X;
+        double dy = pr.Y - t.Y;
+        return dx * dx + dy * dy < 22 * 22; // radius approx
+    }
+
+    private void Clamp(Tank t)
+    {
+        t.X = Math.Clamp(t.X, 20, 620);
+        t.Y = Math.Clamp(t.Y, 20, 380);
+    }
+
+    private bool Pressed(GamepadSnapshot pad, int index) => index < pad.Buttons.Length && pad.Buttons[index].Pressed;
+    private double Dead(double v) => Math.Abs(v) < 0.25 ? 0 : v;
+
+    public async ValueTask DisposeAsync()
+    {
+        _running = false;
+        if (_selfRef != null) _selfRef.Dispose();
+        await Task.CompletedTask;
+    }
+
+    public class Tank
+    {
+        public double X { get; set; } = 100;
+        public double Y { get; set; } = 200;
+        public double Angle { get; set; } = 0;
+        public double Speed { get; set; } = 110;
+        public int Hp { get; set; } = 100;
+        public bool IsPlayer { get; set; }
+    }
+    public class PlayerTank : Tank { public PlayerTank() { X = 120; Y = 200; IsPlayer = true; } }
+    public class EnemyTank : Tank { public EnemyTank() { X = 520; Y = 200; IsPlayer = false; Speed = 100; } }
+
+    public class Projectile
+    {
+        public double X { get; set; }
+        public double Y { get; set; }
+        public double Angle { get; set; }
+        public double Speed { get; set; }
+        public int Owner { get; set; }
+    }
+
+    public class GamepadSnapshot
+    {
+        public int Index { get; set; }
+        public string Id { get; set; } = string.Empty;
+        public GamepadButton[] Buttons { get; set; } = Array.Empty<GamepadButton>();
+        public double[] Axes { get; set; } = Array.Empty<double>();
+    }
+    public class GamepadButton { public bool Pressed { get; set; } public double Value { get; set; } }
+}
