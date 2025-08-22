@@ -3,9 +3,16 @@
 @inject IJSRuntime JS
 
 <h3>Tank Battle</h3>
-<p><small>Gamepad: Left stick / D-Pad to move, Right stick to aim, A to fire.</small></p>
-<canvas id="tankCanvas" width="640" height="400" style="background:#222;border:2px solid #555;max-width:100%;"></canvas>
-<div class="mt-2">Player HP: @player.Hp &nbsp; Enemy HP: @enemy.Hp</div>
+<p><small>Gamepad: Left stick / D-Pad move, Right stick aim, A fire. After game over press Start or click Play
+        Again.</small></p>
+<canvas id="tankCanvas" width="640" height="400" style="background:#222;border:2px solid #555;max-width:100%;"
+    @onclick="Restart"></canvas>
+<div class="mt-2">Player HP: @player.Hp &nbsp; Enemy HP: @enemy.Hp
+    @if (!_running && (player.Hp <= 0 || enemy.Hp <= 0))
+    {
+        <button class="btn btn-sm btn-primary ms-3" @onclick="Restart">Play Again</button>
+    }
+</div>
 
 @code {
     private DotNetObjectReference<Tanks>? _selfRef;
@@ -14,6 +21,7 @@
     private PlayerTank player = new();
     private EnemyTank enemy = new();
     private double _lastTs;
+    private bool[] _prevButtons = Array.Empty<bool>();
 
     protected override async Task OnAfterRenderAsync(bool first)
     {
@@ -28,10 +36,33 @@
     [JSInvokable]
     public async Task Frame(double ts)
     {
-        if (!_running) return;
         double dt = (_lastTs == 0 ? 0 : (ts - _lastTs)) / 1000.0;
         _lastTs = ts;
         _pads = await JS.InvokeAsync<GamepadSnapshot[]>("gamepadManager.pollGamepads");
+        if (_pads.Length > 0)
+        {
+            var cur = _pads[0];
+            if (_prevButtons.Length != cur.Buttons.Length) _prevButtons = new bool[cur.Buttons.Length];
+        }
+
+        // If not running (game over), still listen for A to restart
+        if (!_running)
+        {
+            if ((player.Hp <= 0 || enemy.Hp <= 0) && _pads.Length > 0)
+            {
+                var gp = _pads[0];
+                if (_prevButtons.Length != gp.Buttons.Length) _prevButtons = new bool[gp.Buttons.Length];
+                bool startNow = gp.Buttons.Length > 9 && gp.Buttons[9].Pressed; // Start
+                bool startPrev = _prevButtons.Length > 9 && _prevButtons[9];
+                if (startNow && !startPrev)
+                {
+                    Restart();
+                }
+                for (int i = 0; i < gp.Buttons.Length && i < _prevButtons.Length; i++) _prevButtons[i] = gp.Buttons[i].Pressed;
+            }
+            return;
+        }
+
         HandleInput(dt);
         UpdateAI(dt);
         UpdateProjectiles(dt);
@@ -40,26 +71,38 @@
         if (player.Hp <= 0 || enemy.Hp <= 0)
         {
             _running = false;
-            await JS.InvokeVoidAsync("tankGame.gameOver", player.Hp > 0 ? "Player Wins!" : "Enemy Wins!");
+            bool playerWon = player.Hp > 0;
+            _ = JS.InvokeVoidAsync("tankGame.addExplosion", playerWon ? enemy.X : player.X, playerWon ? enemy.Y : player.Y);
+            await JS.InvokeVoidAsync("tankGame.gameOver", playerWon ? "Player Wins!" : "Enemy Wins!");
+            _ = JS.InvokeVoidAsync("tankGame.playOutcome", playerWon);
         }
-        else
+
+        if (_pads.Length > 0)
         {
-            // removed JS scheduling call; loop handled in JS
+            var gp = _pads[0];
+            for (int i = 0; i < gp.Buttons.Length && i < _prevButtons.Length; i++)
+                _prevButtons[i] = gp.Buttons[i].Pressed;
         }
+
         StateHasChanged();
     }
 
     private List<Projectile> _projectiles = new();
 
+    private void Restart()
+    {
+        player = new PlayerTank();
+        enemy = new EnemyTank();
+        _projectiles.Clear();
+        _enemyFireTimer = 1; _canFire = true; _fireCooldown = 0; _lastTs = 0; _running = true;
+        _ = JS.InvokeVoidAsync("tankGame.init", _selfRef);
+    }
+
     private void HandleInput(double dt)
     {
-        if (_pads.Length == 0)
-        {
-            // keyboard fallback (WASD + Space)
-            // we need JS to capture keys; quick poll via interop not added yet
-            return;
-        }
+        if (_pads.Length == 0) return;
         var p = _pads[0];
+
         double moveX = 0, moveY = 0;
         if (p.Axes.Length >= 2)
         {
@@ -88,9 +131,12 @@
             player.Angle = Math.Atan2(aimY, aimX);
         }
 
-        if (Pressed(p, 0) && _canFire)
+        if (p.Buttons.Length > 0)
         {
-            Fire(player);
+            bool firePressed = p.Buttons[0].Pressed;
+            bool prev = _prevButtons.Length > 0 && _prevButtons[0];
+            if (firePressed && !prev && _canFire)
+                Fire(player);
         }
 
         _fireCooldown -= dt;
@@ -137,12 +183,12 @@
         if (dist > 160)
         {
             enemy.X += Math.Cos(enemy.Angle) * enemy.Speed * dt; enemy.Y += Math.Sin(enemy.Angle) * enemy.Speed *
-        dt;
+            dt;
         }
         else if (dist < 110)
         {
             enemy.X -= Math.Cos(enemy.Angle) * enemy.Speed * dt; enemy.Y -= Math.Sin(enemy.Angle) *
-        enemy.Speed * dt;
+            enemy.Speed * dt;
         }
         else
         {
@@ -168,8 +214,16 @@
         for (int i = _projectiles.Count - 1; i >= 0; i--)
         {
             var pr = _projectiles[i];
-            if (pr.Owner == 1 && Hit(pr, enemy)) { enemy.Hp -= 10; _projectiles.RemoveAt(i); continue; }
-            if (pr.Owner == 2 && Hit(pr, player)) { player.Hp -= 10; _projectiles.RemoveAt(i); continue; }
+            if (pr.Owner == 1 && Hit(pr, enemy))
+            {
+                enemy.Hp -= 10; _ = JS.InvokeVoidAsync("tankGame.addExplosion", enemy.X,
+                enemy.Y); _projectiles.RemoveAt(i); continue;
+            }
+            if (pr.Owner == 2 && Hit(pr, player))
+            {
+                player.Hp -= 10; _ = JS.InvokeVoidAsync("tankGame.addExplosion", player.X,
+                player.Y); _projectiles.RemoveAt(i); continue;
+            }
         }
     }
 
