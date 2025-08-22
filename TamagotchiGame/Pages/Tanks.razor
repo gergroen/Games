@@ -3,16 +3,16 @@
 @inject IJSRuntime JS
 
 <h3>Tank Battle</h3>
-<p><small>Gamepad: Left stick / D-Pad move, Right stick aim, LT or RT fire. After game over press Start or click Play
-        Again.</small></p>
-<canvas id="tankCanvas" width="640" height="400" style="background:#222;border:2px solid #555;max-width:100%;"
-    @onclick="Restart"></canvas>
-<button class="btn btn-sm btn-secondary mt-2" @onclick="ToggleFullscreen">Fullscreen</button>
-<div class="mt-2">Player HP: @player.Hp &nbsp; Enemy HP: @enemy.Hp
-    @if (!_running && (player.Hp <= 0 || enemy.Hp <= 0))
-    {
-        <button class="btn btn-sm btn-primary ms-3" @onclick="Restart">Play Again</button>
-    }
+<div id="tankGameContainer" class="tank-game-container">
+    <div class="hud-hp">Player HP: @player.Hp &nbsp; Enemy HP: @enemy.Hp
+        @if (!_running && (player.Hp <= 0 || enemy.Hp <= 0))
+        {
+            <button class="btn btn-sm btn-primary ms-2" @onclick="Restart">Play Again</button>
+        }
+        <button class="btn btn-sm btn-secondary ms-2" @onclick="ToggleFullscreen">Fullscreen</button>
+    </div>
+    <canvas id="tankCanvas" width="640" height="400" style="background:#222;border:2px solid #555;max-width:100%;"
+        @onclick="Restart"></canvas>
 </div>
 
 @code {

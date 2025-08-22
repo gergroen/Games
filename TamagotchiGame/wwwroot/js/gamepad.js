@@ -31,7 +31,7 @@ window.addEventListener('gamepaddisconnected', e => console.log('Gamepad disconn
 window.tankGame = (function(){
   let ctx, canvas; let over=false; let _ref=null; let _frameFn=null;
   const explosions=[]; // {x,y,start,duration}
-  let audioCtx=null;
+  let audioCtx=null; let _keyHandlerAdded=false; // added flag
   function ensureAudio(){
     if(!audioCtx){
       try{ audioCtx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ audioCtx=null; }
@@ -70,6 +70,12 @@ window.tankGame = (function(){
     over=false;
     _ref = dotNetRef;
     canvas = document.getElementById('tankCanvas');
+    if(!_keyHandlerAdded){
+      document.addEventListener('keydown', (e)=>{
+        if(e.key==='F11') { e.preventDefault(); toggleFullscreen(); }
+      });
+      _keyHandlerAdded=true;
+    }
     if(!canvas) return;
     ctx = canvas.getContext('2d');
     if(!_frameFn){
@@ -161,9 +167,10 @@ window.tankGame = (function(){
     osc.start(now); osc.stop(now+0.22);
   }
   function toggleFullscreen(){
-    if(!canvas) return;
+    const container=document.getElementById('tankGameContainer')||document.getElementById('tankCanvas');
+    if(!container) return;
     if(!document.fullscreenElement){
-      if(canvas.requestFullscreen) canvas.requestFullscreen();
+      if(container.requestFullscreen) container.requestFullscreen();
     } else {
       document.exitFullscreen?.();
     }
