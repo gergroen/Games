@@ -169,12 +169,34 @@ window.tankGame = (function(){
   function toggleFullscreen(){
     const container=document.getElementById('tankGameContainer')||document.getElementById('tankCanvas');
     if(!container) return;
+    const doResize=()=>{
+      const canvas=document.getElementById('tankCanvas');
+      if(canvas){
+        const w = container === document.fullscreenElement ? screen.width : 640;
+        const h = container === document.fullscreenElement ? screen.height : 400;
+        canvas.width = w; canvas.height = h;
+        if(_ref){ _ref.invokeMethodAsync('SetCanvasSize', w, h).catch(()=>{}); }
+      }
+    };
     if(!document.fullscreenElement){
-      if(container.requestFullscreen) container.requestFullscreen();
+      if(container.requestFullscreen){ container.requestFullscreen().then(()=>{ setTimeout(doResize,50); }); }
     } else {
       document.exitFullscreen?.();
+      setTimeout(doResize,50);
     }
   }
+  document.addEventListener('fullscreenchange', ()=>{
+    const container=document.getElementById('tankGameContainer');
+    const canvas=document.getElementById('tankCanvas');
+    if(!canvas) return;
+    if(document.fullscreenElement===container){
+      canvas.width=screen.width; canvas.height=screen.height;
+      if(_ref){ _ref.invokeMethodAsync('SetCanvasSize', screen.width, screen.height).catch(()=>{}); }
+    } else {
+      canvas.width=640; canvas.height=400;
+      if(_ref){ _ref.invokeMethodAsync('SetCanvasSize', 640, 400).catch(()=>{}); }
+    }
+  });
   function gameOver(msg){
     over=true;
     if(!ctx) return;

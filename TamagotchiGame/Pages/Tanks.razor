@@ -11,7 +11,7 @@
         }
         <button class="btn btn-sm btn-secondary ms-2" @onclick="ToggleFullscreen">Fullscreen</button>
     </div>
-    <canvas id="tankCanvas" width="640" height="400" style="background:#222;border:2px solid #555;max-width:100%;"
+    <canvas id="tankCanvas" width="@GameWidth" height="@GameHeight" style="background:#222;border:2px solid #555;max-width:100%;"
         @onclick="Restart"></canvas>
 </div>
 
@@ -23,6 +23,9 @@
     private EnemyTank enemy = new();
     private double _lastTs;
     private bool[] _prevButtons = Array.Empty<bool>();
+
+    private static int GameWidth = 640;
+    private static int GameHeight = 400;
 
     protected override async Task OnAfterRenderAsync(bool first)
     {
@@ -180,7 +183,7 @@
             var pr = _projectiles[i];
             pr.X += Math.Cos(pr.Angle) * pr.Speed * dt;
             pr.Y += Math.Sin(pr.Angle) * pr.Speed * dt;
-            if (pr.X < 0 || pr.Y < 0 || pr.X > 640 || pr.Y > 400)
+            if (pr.X < 0 || pr.Y < 0 || pr.X > GameWidth || pr.Y > GameHeight)
                 _projectiles.RemoveAt(i);
         }
     }
@@ -249,8 +252,8 @@
 
     private void Clamp(Tank t)
     {
-        t.X = Math.Clamp(t.X, 20, 620);
-        t.Y = Math.Clamp(t.Y, 20, 380);
+        t.X = Math.Clamp(t.X, 20, GameWidth - 20);
+        t.Y = Math.Clamp(t.Y, 20, GameHeight - 20);
     }
 
     private bool Pressed(GamepadSnapshot pad, int index) => index < pad.Buttons.Length && pad.Buttons[index].Pressed;
@@ -266,6 +269,13 @@
     private async Task ToggleFullscreen()
     {
         await JS.InvokeVoidAsync("tankGame.toggleFullscreen");
+    }
+
+    [JSInvokable]
+    public Task SetCanvasSize(int w, int h)
+    {
+        if (w > 100 && h > 100) { GameWidth = w; GameHeight = h; }
+        return Task.CompletedTask;
     }
 
     public class Tank
