@@ -147,6 +147,27 @@ window.tankGame = (function(){
       musicNodes.push(osc);
     });
   }
+  function playFire(){
+    ensureAudio(); if(!audioCtx) return;
+    const now=audioCtx.currentTime;
+    const osc=audioCtx.createOscillator();
+    const gain=audioCtx.createGain();
+    osc.type='square';
+    osc.frequency.setValueAtTime(520, now);
+    osc.frequency.exponentialRampToValueAtTime(180, now+0.18);
+    gain.gain.setValueAtTime(0.35, now);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now+0.2);
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start(now); osc.stop(now+0.22);
+  }
+  function toggleFullscreen(){
+    if(!canvas) return;
+    if(!document.fullscreenElement){
+      if(canvas.requestFullscreen) canvas.requestFullscreen();
+    } else {
+      document.exitFullscreen?.();
+    }
+  }
   function gameOver(msg){
     over=true;
     if(!ctx) return;
@@ -159,5 +180,6 @@ window.tankGame = (function(){
     ctx.font='18px sans-serif';
     ctx.fillText('Click or Press Start to Play Again', canvas.width/2, canvas.height/2 + 24);
   }
-  return { init, draw, gameOver, addExplosion, playOutcome };
+  // expose new funcs
+  return { init, draw, gameOver, addExplosion, playOutcome, playFire, toggleFullscreen };
 })();

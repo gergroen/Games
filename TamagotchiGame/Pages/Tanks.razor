@@ -3,10 +3,11 @@
 @inject IJSRuntime JS
 
 <h3>Tank Battle</h3>
-<p><small>Gamepad: Left stick / D-Pad move, Right stick aim, A fire. After game over press Start or click Play
+<p><small>Gamepad: Left stick / D-Pad move, Right stick aim, LT or RT fire. After game over press Start or click Play
         Again.</small></p>
 <canvas id="tankCanvas" width="640" height="400" style="background:#222;border:2px solid #555;max-width:100%;"
     @onclick="Restart"></canvas>
+<button class="btn btn-sm btn-secondary mt-2" @onclick="ToggleFullscreen">Fullscreen</button>
 <div class="mt-2">Player HP: @player.Hp &nbsp; Enemy HP: @enemy.Hp
     @if (!_running && (player.Hp <= 0 || enemy.Hp <= 0))
     {
@@ -102,6 +103,15 @@
     {
         if (_pads.Length == 0) return;
         var p = _pads[0];
+        // detect fullscreen toggle (Start+Select buttons 9 and 8 pressed together edge)
+        bool startNow = p.Buttons.Length > 9 && p.Buttons[9].Pressed;
+        bool selectNow = p.Buttons.Length > 8 && p.Buttons[8].Pressed;
+        bool startPrev = _prevButtons.Length > 9 && _prevButtons[9];
+        bool selectPrev = _prevButtons.Length > 8 && _prevButtons[8];
+        if (startNow && selectNow && (!startPrev || !selectPrev))
+        {
+            _ = JS.InvokeVoidAsync("tankGame.toggleFullscreen");
+        }
 
         double moveX = 0, moveY = 0;
         if (p.Axes.Length >= 2)
@@ -131,12 +141,14 @@
             player.Angle = Math.Atan2(aimY, aimX);
         }
 
-        if (p.Buttons.Length > 0)
+        // Trigger firing (LT=6 or RT=7)
+        bool ltNow = p.Buttons.Length > 6 && p.Buttons[6].Pressed;
+        bool rtNow = p.Buttons.Length > 7 && p.Buttons[7].Pressed;
+        bool ltPrev = _prevButtons.Length > 6 && _prevButtons[6];
+        bool rtPrev = _prevButtons.Length > 7 && _prevButtons[7];
+        if (((ltNow && !ltPrev) || (rtNow && !rtPrev)) && _canFire)
         {
-            bool firePressed = p.Buttons[0].Pressed;
-            bool prev = _prevButtons.Length > 0 && _prevButtons[0];
-            if (firePressed && !prev && _canFire)
-                Fire(player);
+            Fire(player);
         }
 
         _fireCooldown -= dt;
@@ -148,6 +160,7 @@
 
     private void Fire(Tank t)
     {
+        _ = JS.InvokeVoidAsync("tankGame.playFire");
         _canFire = false;
         _fireCooldown = 0.35; // seconds
         _projectiles.Add(new Projectile
@@ -248,6 +261,11 @@
         _running = false;
         if (_selfRef != null) _selfRef.Dispose();
         await Task.CompletedTask;
+    }
+
+    private async Task ToggleFullscreen()
+    {
+        await JS.InvokeVoidAsync("tankGame.toggleFullscreen");
     }
 
     public class Tank
