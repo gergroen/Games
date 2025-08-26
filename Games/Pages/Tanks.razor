@@ -24,8 +24,14 @@
             </div>
         </div>
         <div class="joystick-wrapper right">
-            <button class="ctrl-btn fire" @onmousedown="StartFire" @onmouseup="StopFire" @onmouseleave="StopFire"
-                @ontouchstart="StartFire" @ontouchend="StopFire" @onclick="ManualFire">FIRE</button>
+            <button class="ctrl-btn small auto @( _autoFire ? "on" : "off")" @onclick="ToggleAutoFire">
+                @(_autoFire ? "AUTO ON" : "AUTO OFF")
+            </button>
+            @if (!_autoFire)
+            {
+                <button class="ctrl-btn fire" @onmousedown="StartFire" @onmouseup="StopFire" @onmouseleave="StopFire"
+                    @ontouchstart="StartFire" @ontouchend="StopFire" @onclick="ManualFire">FIRE</button>
+            }
             <div id="aimJoystick" class="joystick">
                 <div class="stick"></div>
             </div>

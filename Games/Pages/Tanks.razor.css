@@ -2,6 +2,9 @@
 .ctrl-btn { background:#333; color:#eee; border:1px solid #666; border-radius:50%; width:90px; height:90px; font-size:1rem; font-weight:600; pointer-events:auto; }
 .ctrl-btn.fire { background:#8b1; font-size:1.1rem; margin-bottom:0.8rem; box-shadow:0 0 8px rgba(0,0,0,0.4); }
 .ctrl-btn:active { background:#555; }
+.ctrl-btn.small { width:82px; height:42px; border-radius:18px; font-size:0.7rem; font-weight:600; background:#444; }
+.ctrl-btn.small.auto.on { background:#b85; color:#fff; }
+.ctrl-btn.small.auto.off { background:#333; color:#bbb; }
 
 /* Joystick styles */
 .joystick-wrapper { pointer-events:auto; display:flex; flex-direction:column; align-items:center; gap:0.75rem; }

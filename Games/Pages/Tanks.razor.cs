@@ -18,6 +18,8 @@ public partial class Tanks : ComponentBase, IAsyncDisposable
     private bool _running;
     private double _manualMoveX; private double _manualMoveY;
     private double _manualAimX; private double _manualAimY; private bool _manualAiming; private DateTime _lastManualFire = DateTime.MinValue; private bool _fireHeld;
+    private bool _autoFire; // Auto firing enabled flag
+    private double _autoFireTimer; // timer accumulator between shots when auto fire
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -75,11 +77,7 @@ public partial class Tanks : ComponentBase, IAsyncDisposable
                 Battlefield.MovePlayer(_manualMoveX, _manualMoveY, dt);
             if (_manualAiming && (Math.Abs(_manualAimX) > 0 || Math.Abs(_manualAimY) > 0))
                 Battlefield.AimPlayer(_manualAimX, _manualAimY);
-            if (_fireHeld)
-            {
-                // Continuous fire attempt (cooldown enforced inside Battlefield.TryFirePlayer)
-                Battlefield.TryFirePlayer(() => _ = JS.InvokeVoidAsync("tankGame.playFire"));
-            }
+            HandleFiring(dt);
             return;
         }
         var p = _pads[0];
@@ -94,6 +92,25 @@ public partial class Tanks : ComponentBase, IAsyncDisposable
         bool ltNow = p.Buttons.Length > 6 && p.Buttons[6].Pressed; bool rtNow = p.Buttons.Length > 7 && p.Buttons[7].Pressed;
         bool ltPrev = _prevButtons.Length > 6 && _prevButtons[6]; bool rtPrev = _prevButtons.Length > 7 && _prevButtons[7];
         if ((ltNow && !ltPrev) || (rtNow && !rtPrev)) { Battlefield.TryFirePlayer(() => _ = JS.InvokeVoidAsync("tankGame.playFire")); }
+        if (_autoFire) HandleFiring(dt);
+    }
+
+    private void HandleFiring(double dt)
+    {
+        // Manual hold fire always tries
+        if (_fireHeld)
+        {
+            Battlefield.TryFirePlayer(() => _ = JS.InvokeVoidAsync("tankGame.playFire"));
+        }
+        if (_autoFire && !_fireHeld)
+        {
+            _autoFireTimer -= dt;
+            if (_autoFireTimer <= 0)
+            {
+                Battlefield.TryFirePlayer(() => _ = JS.InvokeVoidAsync("tankGame.playFire"));
+                _autoFireTimer = 0.4; // slightly above core cooldown ensuring consistent cadence
+            }
+        }
     }
 
     private void StartMove(double x, double y)
@@ -117,6 +134,11 @@ public partial class Tanks : ComponentBase, IAsyncDisposable
     private void StopFire()
     {
         _fireHeld = false;
+    }
+
+    private void ToggleAutoFire()
+    {
+        _autoFire = !_autoFire; if (_autoFire) { _autoFireTimer = 0; }
     }
 
     private void StartAim(double x, double y)
