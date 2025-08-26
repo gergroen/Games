@@ -6,6 +6,9 @@
 .ctrl-btn.small.auto.on { background:#b85; color:#fff; }
 .ctrl-btn.small.auto.off { background:#333; color:#bbb; }
 
+/* Icon buttons in HUD (restart/fullscreen) */
+.btn-icon { width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; padding:0; font-size:1rem; line-height:1; }
+
 /* Joystick styles */
 .joystick-wrapper { pointer-events:auto; display:flex; flex-direction:column; align-items:center; gap:0.75rem; }
 .joystick-wrapper.right { align-items:flex-end; }

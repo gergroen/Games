@@ -8,11 +8,10 @@
             var enemyHp = enemy?.Hp ?? 0;
         }
         Player HP: @Battlefield.Player.Hp | Enemy HP: @enemyHp
-        @if (!_running && (Battlefield.Player.Hp <= 0 || Battlefield.EnemiesRemaining == 0))
-        {
-            <button class="btn btn-sm btn-primary ms-2" @onclick="Restart">Play Again</button>
-        }
-        <button class="btn btn-sm btn-secondary ms-2" @onclick="ToggleFullscreen">Fullscreen</button>
+        <button class="btn btn-sm btn-primary ms-2 btn-icon" @onclick="Restart" title="Restart"
+            aria-label="Restart">&#x21bb;</button>
+        <button class="btn btn-sm btn-secondary ms-2 btn-icon" @onclick="ToggleFullscreen" title="Fullscreen"
+            aria-label="Fullscreen">&#x26F6;</button>
     </div>
     <canvas id="tankCanvas" width="@Battlefield.GameWidth" height="@Battlefield.GameHeight"
         style="background:#222;border:2px solid #555;max-width:100%;"></canvas>
