@@ -144,9 +144,20 @@ code {
   .pet-sprite { font-size:2rem; }
 }
 
-.hud-hp { position:fixed; top:8px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.55); padding:6px 14px; border-radius:18px; color:#fff; font-size:14px; z-index:1000; -webkit-backdrop-filter:blur(4px); backdrop-filter:blur(4px); box-shadow:0 0 8px rgba(0,0,0,0.4); }
-.hud-hp button{ margin-left:8px; }
-@media (max-width:600px){ .hud-hp { font-size:12px; padding:4px 10px; } }
+.hud-hp { position:fixed; top:8px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.55); padding:6px 14px; border-radius:18px; color:#fff; font-size:clamp(11px,1.6vw,14px); z-index:1000; -webkit-backdrop-filter:blur(4px); backdrop-filter:blur(4px); box-shadow:0 0 8px rgba(0,0,0,0.4); line-height:1.2; display:inline-flex; align-items:center; gap:.35rem; flex-wrap:nowrap; }
+.hud-hp button{ margin-left:8px; white-space:nowrap; }
+@media (max-width:600px){ .hud-hp { padding:4px 10px; } }
+/* Ultra narrow phones: allow wrapping & full-width bar */
+@media (max-width:420px){
+    .hud-hp { left:8px; right:8px; transform:none; justify-content:center; flex-wrap:wrap; text-align:center; gap:.4rem .6rem; }
+    .hud-hp button{ margin-left:0; flex:1 1 auto; min-width:110px; }
+}
+/* Landscape on short heights: pin closer to edge, reduce padding */
+@media (max-height:420px) and (orientation:landscape){
+    .hud-hp { top:4px; padding:4px 10px; }
+}
+/* When many buttons appear (restart + fullscreen) shrink spacing slightly */
+.hud-hp .btn{ padding:.25rem .5rem; }
 
 .tank-game-container { position:relative; display:inline-block; }
 .tank-game-container:fullscreen .hud-hp, .tank-game-container:-webkit-full-screen .hud-hp { position:fixed; }
