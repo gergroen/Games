@@ -26,6 +26,8 @@ public partial class Tanks : ComponentBase, IAsyncDisposable
             _selfRef = DotNetObjectReference.Create(this);
             Battlefield.Reset();
             await JS.InvokeVoidAsync("tankGame.init", _selfRef);
+            // Initialize virtual joysticks for touch/mobile
+            await JS.InvokeVoidAsync("virtualJoysticks.init", _selfRef);
             _running = true;
         }
     }
@@ -128,7 +130,7 @@ public partial class Tanks : ComponentBase, IAsyncDisposable
 
     private void Restart()
     {
-        Battlefield.Reset(); _lastTs = 0; _running = true; _ = JS.InvokeVoidAsync("tankGame.init", _selfRef);
+        Battlefield.Reset(); _lastTs = 0; _running = true; _ = JS.InvokeVoidAsync("tankGame.init", _selfRef); _ = JS.InvokeVoidAsync("virtualJoysticks.init", _selfRef);
     }
 
     private Task ToggleFullscreen() => JS.InvokeVoidAsync("tankGame.toggleFullscreen").AsTask();
@@ -137,5 +139,34 @@ public partial class Tanks : ComponentBase, IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         _running = false; _selfRef?.Dispose(); await Task.CompletedTask;
+    }
+
+    // Virtual joystick callbacks
+    [JSInvokable]
+    public Task OnVirtualMove(double x, double y, bool active)
+    {
+        if (active)
+        {
+            _manualMoveX = x; _manualMoveY = y;
+        }
+        else
+        {
+            _manualMoveX = 0; _manualMoveY = 0;
+        }
+        return Task.CompletedTask;
+    }
+
+    [JSInvokable]
+    public Task OnVirtualAim(double x, double y, bool active)
+    {
+        if (active)
+        {
+            _manualAimX = x; _manualAimY = y; _manualAiming = true; Battlefield.AimPlayer(x, y);
+        }
+        else
+        {
+            _manualAiming = false; _manualAimX = 0; _manualAimY = 0;
+        }
+        return Task.CompletedTask;
     }
 }

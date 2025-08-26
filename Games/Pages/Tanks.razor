@@ -18,38 +18,16 @@
     <canvas id="tankCanvas" width="@Battlefield.GameWidth" height="@Battlefield.GameHeight"
         style="background:#222;border:2px solid #555;max-width:100%;"></canvas>
     <div class="control-overlay">
-        <div class="dir-pad">
-            <button class="ctrl-btn up" @onmousedown="(() => StartMove(0, -1))" @onmouseup="(() => StopMove(0, -1))"
-                @onmouseleave="(() => StopMove(0, -1))" @ontouchstart="(() => StartMove(0, -1))"
-                @ontouchend="(() => StopMove(0, -1))">▲</button>
-            <div class="middle-row">
-                <button class="ctrl-btn left" @onmousedown="(() => StartMove(-1, 0))"
-                    @onmouseup="(() => StopMove(-1, 0))" @onmouseleave="(() => StopMove(-1, 0))"
-                    @ontouchstart="(() => StartMove(-1, 0))" @ontouchend="(() => StopMove(-1, 0))">◀</button>
-                <button class="ctrl-btn center" disabled>+</button>
-                <button class="ctrl-btn right" @onmousedown="(() => StartMove(1, 0))"
-                    @onmouseup="(() => StopMove(1, 0))" @onmouseleave="(() => StopMove(1, 0))"
-                    @ontouchstart="(() => StartMove(1, 0))" @ontouchend="(() => StopMove(1, 0))">▶</button>
+        <div class="joystick-wrapper">
+            <div id="moveJoystick" class="joystick">
+                <div class="stick"></div>
             </div>
-            <button class="ctrl-btn down" @onmousedown="(() => StartMove(0, 1))" @onmouseup="(() => StopMove(0, 1))"
-                @onmouseleave="(() => StopMove(0, 1))" @ontouchstart="(() => StartMove(0, 1))"
-                @ontouchend="(() => StopMove(0, 1))">▼</button>
         </div>
-        <div class="action-pad">
+        <div class="joystick-wrapper right">
             <button class="ctrl-btn fire" @onmousedown="StartFire" @onmouseup="StopFire" @onmouseleave="StopFire"
                 @ontouchstart="StartFire" @ontouchend="StopFire" @onclick="ManualFire">FIRE</button>
-            <div class="aim-pad">
-                <button class="ctrl-btn aim up" @onmousedown="(() => StartAim(0, -1))" @onmouseup="StopAim"
-                    @onmouseleave="StopAim" @ontouchstart="(() => StartAim(0, -1))" @ontouchend="StopAim">▲</button>
-                <div class="middle-row">
-                    <button class="ctrl-btn aim left" @onmousedown="(() => StartAim(-1, 0))" @onmouseup="StopAim"
-                        @onmouseleave="StopAim" @ontouchstart="(() => StartAim(-1, 0))" @ontouchend="StopAim">◀</button>
-                    <button class="ctrl-btn aim center" disabled>•</button>
-                    <button class="ctrl-btn aim right" @onmousedown="(() => StartAim(1, 0))" @onmouseup="StopAim"
-                        @onmouseleave="StopAim" @ontouchstart="(() => StartAim(1, 0))" @ontouchend="StopAim">▶</button>
-                </div>
-                <button class="ctrl-btn aim down" @onmousedown="(() => StartAim(0, 1))" @onmouseup="StopAim"
-                    @onmouseleave="StopAim" @ontouchstart="(() => StartAim(0, 1))" @ontouchend="StopAim">▼</button>
+            <div id="aimJoystick" class="joystick">
+                <div class="stick"></div>
             </div>
         </div>
     </div>

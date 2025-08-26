@@ -1,21 +1,17 @@
-.control-overlay {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-    padding: 0.5rem;
-    font-size: 0.9rem;
-    -webkit-user-select: none;
-    user-select: none;
-    touch-action: none;
-}
-.dir-pad, .action-pad, .aim-pad { pointer-events: auto; }
-.dir-pad, .aim-pad { display: flex; flex-direction: column; gap: 0.3rem; }
-.dir-pad .middle-row, .aim-pad .middle-row { display: flex; gap: 0.3rem; }
-.ctrl-btn { background:#333; color:#eee; border:1px solid #666; border-radius:6px; width:56px; height:56px; font-size:1rem; font-weight:600; }
-.ctrl-btn.fire { width:90px; height:90px; background:#8b1; font-size:1.1rem; margin-bottom:0.6rem; }
-.aim-pad .ctrl-btn { width:48px; height:48px; font-size:0.9rem; }
+.control-overlay { position:absolute; inset:0; pointer-events:none; display:flex; justify-content:space-between; align-items:flex-end; padding:0.5rem; font-size:0.9rem; -webkit-user-select:none; user-select:none; touch-action:none; }
+.ctrl-btn { background:#333; color:#eee; border:1px solid #666; border-radius:50%; width:90px; height:90px; font-size:1rem; font-weight:600; pointer-events:auto; }
+.ctrl-btn.fire { background:#8b1; font-size:1.1rem; margin-bottom:0.8rem; box-shadow:0 0 8px rgba(0,0,0,0.4); }
 .ctrl-btn:active { background:#555; }
-@media (min-width: 900px){ .control-overlay { max-width: 860px; margin: 0 auto; left:0; right:0; } }
+
+/* Joystick styles */
+.joystick-wrapper { pointer-events:auto; display:flex; flex-direction:column; align-items:center; gap:0.75rem; }
+.joystick-wrapper.right { align-items:flex-end; }
+.joystick { position:relative; width:140px; height:140px; border:2px solid #555; border-radius:50%; background:radial-gradient(circle at 50% 50%, #2a2a2a 0%, #181818 70%); box-shadow:0 0 8px rgba(0,0,0,0.5) inset; touch-action:none; }
+.joystick .stick { position:absolute; left:50%; top:50%; width:70px; height:70px; margin:-35px 0 0 -35px; background:#444; border:2px solid #777; border-radius:50%; transition:background .15s; display:flex; align-items:center; justify-content:center; color:#ddd; font-size:0.8rem; }
+.joystick.active .stick { background:#666; }
+@media (max-width: 640px){
+    .joystick { width:120px; height:120px; }
+    .joystick .stick { width:60px; height:60px; margin:-30px 0 0 -30px; }
+    .ctrl-btn { width:80px; height:80px; }
+}
+@media (min-width: 900px){ .control-overlay { max-width:860px; margin:0 auto; left:0; right:0; } }
