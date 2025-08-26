@@ -186,6 +186,25 @@ window.tankGame = (function(){
       setTimeout(doResize,50);
     }
   }
+  // shared resize logic (fullscreen or responsive fallback) for orientation / window size changes
+  function responsiveResize(){
+    const canvas=document.getElementById('tankCanvas');
+    if(!canvas) return;
+    const container=document.getElementById('tankGameContainer')||canvas;
+    if(document.fullscreenElement===container){
+      // Fullscreen: use screen size
+      canvas.width=screen.width; canvas.height=screen.height;
+      if(_ref){ _ref.invokeMethodAsync('SetCanvasSize', screen.width, screen.height).catch(()=>{}); }
+    } else {
+      // Not fullscreen: keep designed base size but shrink to fit small mobile widths, preserve aspect
+      const baseW=640, baseH=400, aspect=baseH/baseW;
+      let w=baseW;
+      if(window.innerWidth && window.innerWidth < baseW){ w = window.innerWidth; }
+      let h=Math.round(w*aspect);
+      canvas.width=w; canvas.height=h;
+      if(_ref){ _ref.invokeMethodAsync('SetCanvasSize', w, h).catch(()=>{}); }
+    }
+  }
   document.addEventListener('fullscreenchange', ()=>{
     const container=document.getElementById('tankGameContainer');
     const canvas=document.getElementById('tankCanvas');
@@ -197,6 +216,17 @@ window.tankGame = (function(){
       canvas.width=640; canvas.height=400;
       if(_ref){ _ref.invokeMethodAsync('SetCanvasSize', 640, 400).catch(()=>{}); }
     }
+  });
+  // Handle mobile orientation changes (and some browsers fire only resize). Use slight delays to allow layout stabilization.
+  window.addEventListener('orientationchange', ()=>{
+    setTimeout(responsiveResize, 60);
+    setTimeout(responsiveResize, 300);
+  });
+  // Also respond to window resize (helpful when rotating or resizing viewport UI chrome)
+  window.addEventListener('resize', ()=>{
+    // debounce via requestAnimationFrame
+    if(window.__tankResizeRaf){ cancelAnimationFrame(window.__tankResizeRaf); }
+    window.__tankResizeRaf = requestAnimationFrame(()=> responsiveResize());
   });
   function gameOver(msg){
     over=true;
