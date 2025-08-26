@@ -89,14 +89,15 @@ window.tankGame = (function(){
   function draw(player, enemy, projectiles){
     if(!ctx) return;
     ctx.clearRect(0,0,canvas.width,canvas.height);
-    // draw arena grid
     ctx.strokeStyle='#333';
     for(let x=0;x<canvas.width;x+=40){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvas.height); ctx.stroke(); }
     for(let y=0;y<canvas.height;y+=40){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvas.width,y); ctx.stroke(); }
-
     drawTank(player,'#4cff4c');
-    drawTank(enemy,'#ff4c4c');
-
+    if(Array.isArray(enemy)){
+      enemy.forEach(e=>{ if(e.hp>0 || e.Hp>0) drawTank(e,'#ff4c4c'); });
+    } else {
+      drawTank(enemy,'#ff4c4c');
+    }
     ctx.fillStyle='#ffdc66';
     projectiles.forEach(p=>{ ctx.beginPath(); ctx.arc(p.x,p.y,4,0,Math.PI*2); ctx.fill(); });
     drawExplosions();

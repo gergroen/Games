@@ -1,0 +1,21 @@
+.control-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding: 0.5rem;
+    font-size: 0.9rem;
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: none;
+}
+.dir-pad, .action-pad, .aim-pad { pointer-events: auto; }
+.dir-pad, .aim-pad { display: flex; flex-direction: column; gap: 0.3rem; }
+.dir-pad .middle-row, .aim-pad .middle-row { display: flex; gap: 0.3rem; }
+.ctrl-btn { background:#333; color:#eee; border:1px solid #666; border-radius:6px; width:56px; height:56px; font-size:1rem; font-weight:600; }
+.ctrl-btn.fire { width:90px; height:90px; background:#8b1; font-size:1.1rem; margin-bottom:0.6rem; }
+.aim-pad .ctrl-btn { width:48px; height:48px; font-size:0.9rem; }
+.ctrl-btn:active { background:#555; }
+@media (min-width: 900px){ .control-overlay { max-width: 860px; margin: 0 auto; left:0; right:0; } }

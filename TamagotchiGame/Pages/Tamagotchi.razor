@@ -1,197 +1,26 @@
 @page "/"
+@using TamagotchiGame.Models
 
 <h3>Tamagotchi</h3>
 
 <div class="pet-container">
     <div class="pet-status">
-        <p>Name: @Pet.Name</p>
-        <p>Hunger: @((int)Pet.Hunger)</p>
-        <p>Happiness: @((int)Pet.Happiness)</p>
-        <p>Energy: @((int)Pet.Energy)</p>
-        <p>Mood: @CurrentMood</p>
+        <p>Name: @PetService.State.Name</p>
+        <p>Hunger: @((int)PetService.State.Hunger)</p>
+        <p>Happiness: @((int)PetService.State.Happiness)</p>
+        <p>Energy: @((int)PetService.State.Energy)</p>
+        <p>Mood: @PetService.CurrentMood</p>
     </div>
     <div class="pet-visual">
-        <div class="pet-sprite @SpriteClasses">@Face</div>
+        <div class="pet-sprite @PetService.SpriteClasses">@PetService.Face</div>
     </div>
     <div class="actions">
-        <button class="btn btn-sm btn-primary" @onclick="Feed">Feed (A)</button>
-        <button class="btn btn-sm btn-secondary" @onclick="Play">Play (B)</button>
-        <button class="btn btn-sm btn-warning" @onclick="Rest">Rest (X)</button>
+        <button class="btn btn-sm btn-primary" @onclick="OnFeed">Feed (A)</button>
+        <button class="btn btn-sm btn-secondary" @onclick="OnPlay">Play (B)</button>
+        <button class="btn btn-sm btn-warning" @onclick="OnRest">Rest (X)</button>
     </div>
     <p><small>Use your gamepad: A=Feed, B=Play, X=Rest.</small></p>
-    <p>Gamepad Connected: @(_gamepadConnected ? $"Yes ({_gamepadId})" : "No")</p>
+    <p>Gamepad Connected: @(GamepadConnected ? $"Yes ({GamepadId})" : "No")</p>
 </div>
+@* Logic moved to partial class code-behind *@
 
-@code {
-    private PetState Pet = new("PixelPet");
-    private bool _gamepadConnected;
-    private string? _gamepadId;
-    private System.Timers.Timer? _tickTimer;
-    private DotNetObjectReference<FrameCallback>? _frameCallbackRef;
-    private FrameCallback? _frameCallback;
-    private bool[] _prevButtons = Array.Empty<bool>();
-    private int _animId = 0;
-
-    [Inject] IJSRuntime JS { get; set; } = default!;
-
-    protected override void OnInitialized()
-    {
-        // Faster tick for smoother decay/updates
-        _tickTimer = new System.Timers.Timer(1000);
-        _tickTimer.Elapsed += (s, e) =>
-        {
-            ApplyDecay();
-            InvokeAsync(StateHasChanged);
-        };
-        _tickTimer.Start();
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            _frameCallback = new FrameCallback(CheckGamepad);
-            _frameCallbackRef = DotNetObjectReference.Create(_frameCallback);
-            await JS.InvokeVoidAsync("gamepadManager.startLoop", _frameCallbackRef);
-        }
-    }
-
-    private string CurrentMood => Pet.Happiness > 70 && Pet.Hunger < 60 && Pet.Energy > 40 ? "Happy" :
-    Pet.Hunger > 80 ? "Hungry" :
-    Pet.Energy < 25 ? "Tired" :
-    Pet.Happiness < 40 ? "Sad" : "Neutral";
-
-    private string Face => Pet.Animation switch
-    {
-        "eating" => "(ˆڡˆ)",
-        "playing" => "(≧◡≦)",
-        "resting" => "(-‿-) zZ",
-        _ => CurrentMood switch
-        {
-            "Happy" => "^_^",
-            "Hungry" => "(º﹃º)",
-            "Tired" => "(-_-)",
-            "Sad" => "T_T",
-            _ => "o_o"
-        }
-    };
-
-    private string SpriteClasses => $"mood-{CurrentMood.ToLower()} anim-{Pet.Animation}";
-
-    private void Feed()
-    {
-        double amount = 12 + (Pet.Hunger > 60 ? 8 : 0);
-        Pet.Hunger = Math.Max(0, Pet.Hunger - amount);
-        Pet.Happiness = Math.Min(100, Pet.Happiness + 3);
-        TriggerAnimation("eating", 1200);
-    }
-
-    private void Play()
-    {
-        if (Pet.Energy < 8) return;
-        Pet.Happiness = Math.Min(100, Pet.Happiness + 14);
-        Pet.Energy = Math.Max(0, Pet.Energy - 8);
-        Pet.Hunger = Math.Min(100, Pet.Hunger + 4);
-        TriggerAnimation("playing", 1000);
-    }
-
-    private void Rest()
-    {
-        Pet.Energy = Math.Min(100, Pet.Energy + 18);
-        Pet.Hunger = Math.Min(100, Pet.Hunger + 2);
-        Pet.Happiness = Math.Min(100, Pet.Happiness + 1);
-        TriggerAnimation("resting", 1500);
-    }
-
-    private void TriggerAnimation(string name, int durationMs)
-    {
-        int id = ++_animId;
-        Pet.Animation = name;
-        _ = Task.Run(async () =>
-        {
-            await Task.Delay(durationMs);
-            if (_animId == id)
-            {
-                Pet.Animation = "idle";
-                await InvokeAsync(StateHasChanged);
-            }
-        });
-        StateHasChanged();
-    }
-
-    private void ApplyDecay()
-    {
-        double hungerInc = 0.9 + (Pet.Energy / 200.0);
-        double energyDec = 0.5 + (Pet.Happiness / 250.0);
-        double happinessDec = 0.3 + (Pet.Hunger > 70 ? 0.5 : 0) + (Pet.Energy < 30 ? 0.4 : 0);
-        Pet.Hunger = Math.Min(100, Pet.Hunger + hungerInc);
-        Pet.Energy = Math.Max(0, Pet.Energy - energyDec);
-        Pet.Happiness = Math.Max(0, Pet.Happiness - happinessDec);
-    }
-
-    private async Task CheckGamepad(double _)
-    {
-        try
-        {
-            var pads = await JS.InvokeAsync<GamepadSnapshot[]>("gamepadManager.pollGamepads");
-            if (pads.Length > 0)
-            {
-                _gamepadConnected = true;
-                _gamepadId = pads[0].Id;
-                var p = pads[0];
-                EnsurePrevButtonsSize(p.Buttons.Length);
-                for (int i = 0; i < p.Buttons.Length; i++)
-                {
-                    bool pressed = p.Buttons[i].Pressed;
-                    if (pressed && !_prevButtons[i])
-                    {
-                        if (i == 0) Feed();
-                        else if (i == 1) Play();
-                        else if (i == 2) Rest();
-                    }
-                    _prevButtons[i] = pressed;
-                }
-            }
-            else
-            {
-                _gamepadConnected = false;
-            }
-        }
-        catch { }
-        StateHasChanged();
-    }
-
-    private void EnsurePrevButtonsSize(int len)
-    {
-        if (_prevButtons.Length != len)
-            _prevButtons = new bool[len];
-    }
-
-    public class PetState
-    {
-        public PetState(string name) { Name = name; }
-        public string Name { get; set; }
-        public double Hunger { get; set; } = 20;
-        public double Happiness { get; set; } = 80;
-        public double Energy { get; set; } = 80;
-        public string Animation { get; set; } = "idle";
-    }
-
-    public class GamepadSnapshot
-    {
-        public int Index { get; set; }
-        public string Id { get; set; } = string.Empty;
-        public GamepadButton[] Buttons { get; set; } = Array.Empty<GamepadButton>();
-        public double[] Axes { get; set; } = Array.Empty<double>();
-    }
-
-    public class GamepadButton { public bool Pressed { get; set; } public double Value { get; set; } }
-
-    public class FrameCallback
-    {
-        private readonly Func<double, Task> _callback;
-        public FrameCallback(Func<double, Task> callback) => _callback = callback;
-        [JSInvokable]
-        public Task Invoke(double timestamp) => _callback(timestamp);
-    }
-}
