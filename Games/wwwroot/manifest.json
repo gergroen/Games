@@ -1,0 +1,25 @@
+{
+  "name": "Games",
+  "short_name": "Games",
+  "description": "A collection of games including virtual pet and tank battle",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1f1f29",
+  "theme_color": "#1b6ec2",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "favicon.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["games", "entertainment"],
+  "lang": "en"
+}
