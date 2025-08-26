@@ -161,6 +161,7 @@ public partial class Tanks : ComponentBase, IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         _running = false; _selfRef?.Dispose(); await Task.CompletedTask;
+    try { await JS.InvokeVoidAsync("tankGame.cleanup"); } catch { }
     }
 
     // Virtual joystick callbacks

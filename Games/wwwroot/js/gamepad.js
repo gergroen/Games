@@ -78,6 +78,10 @@ window.tankGame = (function(){
     }
     if(!canvas) return;
     ctx = canvas.getContext('2d');
+  // Prevent vertical scrollbar while game active
+  document.body.classList.add('no-vert-scroll');
+  // Initial sizing
+  responsiveResize();
     if(!_frameFn){
       _frameFn = function frame(ts){
         if(_ref){ _ref.invokeMethodAsync('Frame', ts).catch(()=>{}); }
@@ -195,15 +199,25 @@ window.tankGame = (function(){
       // Fullscreen: use screen size
       canvas.width=screen.width; canvas.height=screen.height;
       if(_ref){ _ref.invokeMethodAsync('SetCanvasSize', screen.width, screen.height).catch(()=>{}); }
-    } else {
-      // Not fullscreen: keep designed base size but shrink to fit small mobile widths, preserve aspect
-      const baseW=640, baseH=400, aspect=baseH/baseW;
-      let w=baseW;
-      if(window.innerWidth && window.innerWidth < baseW){ w = window.innerWidth; }
-      let h=Math.round(w*aspect);
-      canvas.width=w; canvas.height=h;
-      if(_ref){ _ref.invokeMethodAsync('SetCanvasSize', w, h).catch(()=>{}); }
+      return;
     }
+    // Fill visible area below top-row (exclude its height + article padding)
+    const topRow = document.querySelector('.top-row');
+    let topOffset = topRow ? topRow.getBoundingClientRect().bottom : 0;
+    // Account for potential padding on article/content (px-4 ~ 1.5rem default). Use computed style.
+    const article = canvas.closest('article');
+    if(article){
+      const cs = getComputedStyle(article);
+      const pt = parseFloat(cs.paddingTop)||0; // top padding already included in getBoundingClientRect bottom? usually not
+      topOffset += pt; // add padding space to subtract
+    }
+    const availH = window.innerHeight - topOffset - 2; // slight buffer to avoid scroll
+    const w = Math.max(200, (container.clientWidth || window.innerWidth));
+    const h = Math.max(200, Math.floor(availH));
+  // Optionally set container height so overlays align
+  container.style.height = h + 'px';
+  canvas.width = w; canvas.height = h;
+  if(_ref){ _ref.invokeMethodAsync('SetCanvasSize', w, h).catch(()=>{}); }
   }
   document.addEventListener('fullscreenchange', ()=>{
     const container=document.getElementById('tankGameContainer');
@@ -241,5 +255,8 @@ window.tankGame = (function(){
     ctx.fillText('Click or Press Start to Play Again', canvas.width/2, canvas.height/2 + 24);
   }
   // expose new funcs
-  return { init, draw, gameOver, addExplosion, playOutcome, playFire, toggleFullscreen };
+  function cleanup(){
+    document.body.classList.remove('no-vert-scroll');
+  }
+  return { init, draw, gameOver, addExplosion, playOutcome, playFire, toggleFullscreen, cleanup };
 })();
