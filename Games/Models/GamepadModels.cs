@@ -1,4 +1,4 @@
-namespace TamagotchiGame.Models;
+namespace Games.Models;
 
 public class GamepadSnapshot
 {

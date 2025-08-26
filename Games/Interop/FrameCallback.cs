@@ -1,6 +1,6 @@
 using Microsoft.JSInterop;
 
-namespace TamagotchiGame.Interop;
+namespace Games.Interop;
 
 /// <summary>
 /// Helper that lets JavaScript provide a requestAnimationFrame timestamp back into .NET.

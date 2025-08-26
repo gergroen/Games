@@ -1,10 +1,10 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
-using TamagotchiGame.Interop;
-using TamagotchiGame.Models;
-using TamagotchiGame.Services;
+using Games.Interop;
+using Games.Models;
+using Games.Services;
 
-namespace TamagotchiGame.Pages;
+namespace Games.Pages;
 
 public partial class Tamagotchi : ComponentBase, IAsyncDisposable
 {

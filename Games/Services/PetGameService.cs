@@ -1,6 +1,6 @@
-using TamagotchiGame.Models;
+using Games.Models;
 
-namespace TamagotchiGame.Services;
+namespace Games.Services;
 
 /// <summary>
 /// Encapsulates pet logic (actions, decay, derived properties).

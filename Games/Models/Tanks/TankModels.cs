@@ -1,4 +1,4 @@
-namespace TamagotchiGame.Models.Tanks;
+namespace Games.Models.Tanks;
 
 public enum Team { Player = 0, Ally = 1, Enemy = 2 }
 public enum EnemyBehavior { Aggressive, Shy, Circler, Sniper, Wanderer, Flanker }

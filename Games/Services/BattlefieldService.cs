@@ -1,6 +1,6 @@
-using TamagotchiGame.Models.Tanks;
+using Games.Models.Tanks;
 
-namespace TamagotchiGame.Services;
+namespace Games.Services;
 
 /// <summary>
 /// Encapsulates tank battle game state & core simulation logic (AI, collisions, projectiles).

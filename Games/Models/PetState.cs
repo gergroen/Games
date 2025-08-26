@@ -1,4 +1,4 @@
-namespace TamagotchiGame.Models;
+namespace Games.Models;
 
 /// <summary>
 /// Represents core state for the virtual pet.
