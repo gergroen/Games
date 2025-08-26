@@ -26,6 +26,9 @@
       if(callback) callback(vx, vy, active);
     }
     function start(e){
+      // If the touch/click started on a button (fire/auto) inside wrapper, don't claim it
+      const target = e.target;
+      if(target && target.closest && target.closest('.ctrl-btn')) return;
       if(active) return; active=true; el.classList.add('active');
       if(e.changedTouches){ touchId=e.changedTouches[0].identifier; }
       setFromEvent(e); e.preventDefault();

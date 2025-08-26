@@ -24,7 +24,8 @@
             </div>
         </div>
         <div class="joystick-wrapper right">
-            <button class="ctrl-btn small auto @( _autoFire ? "on" : "off")" @onclick="ToggleAutoFire">
+            <button class="ctrl-btn small auto @( _autoFire ? "on" : "off")" @onclick="ToggleAutoFire"
+                @ontouchstart="ToggleAutoFire">
                 @(_autoFire ? "AUTO ON" : "AUTO OFF")
             </button>
             @if (!_autoFire)
