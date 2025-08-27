@@ -16,8 +16,6 @@ jobs:
     name: E2E Tests
     outputs:
       test-result: ${{ steps.e2e-tests.outcome }}
-      browser-tests-skipped: ${{ steps.e2e-tests.outputs.browser-tests-skipped }}
-      test-failures: ${{ steps.e2e-tests.outputs.test-failures }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -41,58 +39,9 @@ jobs:
       - name: Install Playwright browsers
         run: |
           cd Games.E2ETests
-          # Try multiple installation methods for robustness
-          echo "Attempting to install Playwright browsers..."
-          INSTALL_SUCCESS=false
-          
-          # Method 1: Direct installation with retry logic
-          for i in {1..3}; do
-            echo "Attempt $i: Installing Playwright browsers..."
-            if timeout 300 pwsh bin/Debug/net9.0/playwright.ps1 install --with-deps chromium; then
-              echo "Successfully installed Playwright browsers on attempt $i"
-              INSTALL_SUCCESS=true
-              break
-            else
-              echo "Failed attempt $i, waiting before retry..."
-              sleep 10
-            fi
-          done
-          
-          # Method 2: Alternative installation using global tool
-          if [ "$INSTALL_SUCCESS" = false ]; then
-            echo "Attempting alternative installation method..."
-            if timeout 300 bash -c "dotnet tool install --global Microsoft.Playwright.CLI && playwright install --with-deps chromium"; then
-              echo "Successfully installed using global tool"
-              INSTALL_SUCCESS=true
-            fi
-          fi
-          
-          # Method 3: Force install with different CDN
-          if [ "$INSTALL_SUCCESS" = false ]; then
-            echo "Attempting installation with alternative CDN..."
-            export PLAYWRIGHT_DOWNLOAD_HOST=https://github.com
-            if timeout 300 pwsh bin/Debug/net9.0/playwright.ps1 install --with-deps chromium; then
-              echo "Successfully installed using alternative CDN"
-              INSTALL_SUCCESS=true
-            fi
-          fi
-          
-          # Verify installation
-          if pwsh bin/Debug/net9.0/playwright.ps1 --version >/dev/null 2>&1; then
-            echo "✅ Playwright installation verified successfully"
-            INSTALL_SUCCESS=true
-          elif which playwright >/dev/null 2>&1 && playwright --version >/dev/null 2>&1; then
-            echo "✅ Playwright global tool verified successfully"
-            INSTALL_SUCCESS=true
-          fi
-          
-          # Set output for later steps
-          if [ "$INSTALL_SUCCESS" = true ]; then
-            echo "PLAYWRIGHT_INSTALLED=true" >> $GITHUB_ENV
-          else
-            echo "⚠️  Warning: Playwright installation failed, will run smoke tests only"
-            echo "PLAYWRIGHT_INSTALLED=false" >> $GITHUB_ENV
-          fi
+          echo "Installing Playwright browsers..."
+          pwsh bin/Debug/net9.0/playwright.ps1 install --with-deps chromium
+          echo "✅ Playwright browsers installed successfully"
       
       - name: Start Games application
         run: |
@@ -106,32 +55,9 @@ jobs:
       
       - name: Run E2E tests
         run: |
-          echo "Running smoke tests first (no browser required)..."
-          dotnet test Games.E2ETests --filter "TestCategory!=RequiresBrowser" --logger "console;verbosity=detailed" --logger "trx;LogFileName=smoke-test-results.trx"
-          
-          if [ "$PLAYWRIGHT_INSTALLED" = "true" ]; then
-            echo "✅ Playwright is available, running full E2E tests..."
-            
-            # Run the specific tests that were fixed
-            echo "Running updated E2E tests with fixed selectors..."
-            dotnet test Games.E2ETests --filter "FullName~FullscreenButton_ShouldBePresent|FullName~RestartButton_ShouldResetGame|FullName~GamepadConnectionStatus_ShouldBeDisplayed" --logger "console;verbosity=detailed" --logger "trx;LogFileName=fixed-test-results.trx" || {
-              echo "⚠️  Some fixed tests still failed, but continuing with full suite..."
-            }
-            
-            # Run all E2E tests
-            echo "Running complete E2E test suite..."
-            if dotnet test Games.E2ETests --logger "console;verbosity=detailed" --logger "trx;LogFileName=full-test-results.trx"; then
-              echo "✅ All E2E tests passed successfully"
-            else
-              echo "⚠️  Some E2E tests failed"
-              echo "test-failures=true" >> $GITHUB_OUTPUT
-            fi
-          else
-            echo "⚠️  Playwright browsers not available, skipping browser-dependent tests"
-            echo "Only smoke tests completed successfully"
-            echo "browser-tests-skipped=true" >> $GITHUB_OUTPUT
-          fi
-        continue-on-error: true
+          echo "Running complete E2E test suite..."
+          dotnet test Games.E2ETests --logger "console;verbosity=detailed" --logger "trx;LogFileName=test-results.trx"
+          echo "✅ All E2E tests passed successfully"
         id: e2e-tests
       
       - name: Upload test results
@@ -140,7 +66,6 @@ jobs:
         with:
           name: e2e-test-results
           path: 'Games.E2ETests/TestResults/*.trx'
-          retention-days: 7
       
       - name: Stop Games application
         if: always()
@@ -167,29 +92,12 @@ jobs:
           echo "📊 E2E Test Results Summary:"
           
           if [ "${{ needs.e2e_tests.outputs.test-result }}" = "failure" ]; then
-            echo "⚠️  WARNING: E2E tests reported failures"
-            
-            if [ "${{ needs.e2e_tests.outputs.browser-tests-skipped }}" = "true" ]; then
-              echo "ℹ️  Browser tests were skipped due to Playwright installation failure"
-              echo "ℹ️  Only smoke tests were executed"
-              echo "✅ Deployment will continue as basic functionality is validated"
-              echo ""
-              echo "🚀 Proceeding with deployment..."
-              echo "ℹ️  The application has been validated and is ready for production"
-            elif [ "${{ needs.e2e_tests.outputs.test-failures }}" = "true" ]; then
-              echo "❌ E2E tests failed - blocking deployment"
-              echo "ℹ️  Please fix the failing tests before deployment can proceed"
-              echo "ℹ️  Check the test results artifact for detailed failure information"
-              echo ""
-              echo "🚫 Deployment blocked due to test failures"
-              exit 1
-            else
-              echo "❌ E2E tests failed for unknown reasons - blocking deployment"
-              echo "ℹ️  Please investigate the test failures before proceeding"
-              echo ""
-              echo "🚫 Deployment blocked due to unknown test failures"
-              exit 1
-            fi
+            echo "❌ E2E tests failed - blocking deployment"
+            echo "ℹ️  Please fix the failing tests before deployment can proceed"
+            echo "ℹ️  Check the test results artifact for detailed failure information"
+            echo ""
+            echo "🚫 Deployment blocked due to test failures"
+            exit 1
           else
             echo "✅ E2E tests passed successfully"
             echo "✅ All systems validated - proceeding with deployment"
