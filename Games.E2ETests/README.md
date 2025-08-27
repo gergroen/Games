@@ -1,6 +1,103 @@
-# Games E2E Tests
+# E2E Testing for Games Application
 
-This project contains Playwright-based end-to-end tests for the Games Blazor WebAssembly application, written in C# using MSTest framework.
+This project contains comprehensive end-to-end tests for both the Tamagotchi and Tank Battle games, implemented using Microsoft Playwright and MSTest.
+
+## Test Structure
+
+### Smoke Tests (No Browser Required)
+- **SmokeTests.cs**: Basic HTTP tests that validate the application is running and accessible
+  - Application response validation
+  - Index page content validation
+  - Tank page accessibility 
+  - Static asset accessibility (CSS, JS)
+
+### Browser-Dependent E2E Tests
+- **TamagotchiGameTests.cs**: 7 comprehensive tests for the virtual pet game
+- **TankBattleGameTests.cs**: 9 comprehensive tests for the tank battle game
+
+All browser tests are marked with `[TestCategory("RequiresBrowser")]` to allow selective execution.
+
+## Running Tests
+
+### Prerequisites
+- .NET 9.0 SDK
+- Running Games application (on http://localhost:5080)
+
+### Local Development
+
+**Run smoke tests only (no browser required):**
+```bash
+dotnet test --filter "TestCategory!=RequiresBrowser" --logger "console;verbosity=detailed"
+```
+
+**Run all tests (requires Playwright browsers):**
+```bash
+# Install Playwright browsers first
+pwsh bin/Debug/net9.0/playwright.ps1 install --with-deps
+
+# Run all tests
+dotnet test --logger "console;verbosity=detailed"
+```
+
+### CI/CD Integration
+
+The GitHub Actions workflow automatically:
+
+1. **Installs dependencies** and builds the application
+2. **Attempts Playwright browser installation** with retry logic
+3. **Runs smoke tests first** (always works, no browser required)
+4. **Conditionally runs full E2E tests** if browsers are available
+5. **Continues deployment** even if some tests fail
+6. **Uploads test results** as artifacts for review
+
+This ensures deployment isn't blocked by browser installation issues while still providing comprehensive testing when possible.
+
+## Test Coverage
+
+### Tamagotchi Game Tests
+- Navigation and UI element validation
+- Action button functionality (Feed, Play, Rest with gamepad indicators)
+- Gamepad connection status display
+- Mobile responsive design testing
+- Keyboard navigation and accessibility
+
+### Tank Battle Game Tests
+- Battlefield rendering and canvas display validation
+- HUD functionality with HP display testing
+- Fire button and Auto toggle controls
+- Restart and Fullscreen button functionality
+- Mobile viewport virtual joysticks testing
+- Canvas rendering performance validation
+- Cross-game navigation testing
+
+### Smoke Tests
+- Basic application availability
+- Page routing functionality
+- Static asset serving
+- Core infrastructure validation
+
+## Troubleshooting
+
+### Playwright Browser Installation Issues
+If browser installation fails:
+1. Check network connectivity
+2. Try alternative installation: `dotnet tool install --global Microsoft.Playwright.CLI`
+3. Use smoke tests for basic validation: `dotnet test --filter "TestCategory!=RequiresBrowser"`
+
+### Common Issues
+- **Application not running**: Ensure `dotnet run` is active on port 5080
+- **Browser tests failing**: Verify Playwright browsers are installed
+- **Timeout errors**: Increase test timeout values for slow environments
+
+## Architecture
+
+The test design prioritizes reliability and flexibility:
+- **Graceful degradation**: Tests run at multiple levels (smoke → browser)
+- **Selective execution**: Tests can be filtered by category
+- **Retry mechanisms**: Browser installation has multiple fallback strategies
+- **Result preservation**: Test results are uploaded regardless of outcome
+
+This approach ensures consistent CI/CD pipeline execution while maintaining comprehensive test coverage when possible.
 
 ## Overview
 

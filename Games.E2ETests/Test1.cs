@@ -4,6 +4,7 @@ using Microsoft.Playwright.MSTest;
 namespace Games.E2ETests;
 
 [TestClass]
+[TestCategory("RequiresBrowser")]
 public class TamagotchiGameTests : PageTest
 {
     private const string BaseUrl = "http://localhost:5080";

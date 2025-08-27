@@ -10,8 +10,8 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
-    <PackageReference Include="Microsoft.Playwright" Version="1.54.0" />
-    <PackageReference Include="Microsoft.Playwright.MSTest" Version="1.54.0" />
+    <PackageReference Include="Microsoft.Playwright" Version="1.48.0" />
+    <PackageReference Include="Microsoft.Playwright.MSTest" Version="1.48.0" />
     <PackageReference Include="MSTest" Version="3.6.4" />
   </ItemGroup>
 
