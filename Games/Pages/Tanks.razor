@@ -13,6 +13,10 @@
         <button class="btn btn-sm btn-secondary ms-2 btn-icon" @onclick="ToggleFullscreen" title="Fullscreen"
             aria-label="Fullscreen">&#x26F6;</button>
     </div>
+    <div class="radar-container">
+        <div class="radar-title">RADAR</div>
+        <canvas id="radarCanvas" width="120" height="120"></canvas>
+    </div>
     <canvas id="tankCanvas" width="@Battlefield.GameWidth" height="@Battlefield.GameHeight"
         style="background:#222;border:2px solid #555;max-width:100%;"></canvas>
     <div class="control-overlay">

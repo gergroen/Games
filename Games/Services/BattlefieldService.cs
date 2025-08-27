@@ -12,6 +12,14 @@ public class BattlefieldService
     public int GameWidth { get; private set; } = 640;
     public int GameHeight { get; private set; } = 400;
 
+    // World size (larger than viewport)
+    public int WorldWidth { get; private set; } = 5000;
+    public int WorldHeight { get; private set; } = 5000;
+
+    // Camera position (top-left corner of viewport in world coordinates)
+    public double CameraX { get; private set; } = 0;
+    public double CameraY { get; private set; } = 0;
+
     public PlayerTank Player { get; private set; } = new();
     public List<AllyTank> Allies { get; } = new();
     public List<EnemyTank> Enemies { get; } = new();
@@ -42,14 +50,14 @@ public class BattlefieldService
         // Player vs single enemy mode (no allies)
         Allies.Clear();
         Enemies.Clear();
-        Player = new PlayerTank { Id = 0, Team = Team.Player, X = 120, Y = GameHeight / 2.0, BarrelAngle = 0 };
+        Player = new PlayerTank { Id = 0, Team = Team.Player, X = 200, Y = WorldHeight / 2.0, BarrelAngle = 0 };
 
         Enemies.Add(new EnemyTank
         {
             Id = 100,
             Team = Team.Enemy,
-            X = GameWidth - 140,
-            Y = GameHeight / 2.0,
+            X = WorldWidth - 200,
+            Y = WorldHeight / 2.0,
             Angle = Math.PI, // Face left initially
             BarrelAngle = Math.PI, // Barrel also faces left initially
             Behavior = EnemyBehavior.Aggressive,
@@ -57,6 +65,10 @@ public class BattlefieldService
             NextFireTimer = 0.8 + _rand.NextDouble() * 0.6,
             DecisionTimer = 0.6 + _rand.NextDouble() * 0.8
         });
+
+        // Center camera on player initially
+        CameraX = Math.Clamp(Player.X - GameWidth / 2.0, 0, WorldWidth - GameWidth);
+        CameraY = Math.Clamp(Player.Y - GameHeight / 2.0, 0, WorldHeight - GameHeight);
     }
 
     public void Update(double dt, Action<Projectile>? onExplosion, Action? onPlayerHit = null)
@@ -71,18 +83,66 @@ public class BattlefieldService
 
     public void MovePlayer(double moveX, double moveY, double dt)
     {
-        Player.X += moveX * Player.EffectiveSpeed * dt; Player.Y += moveY * Player.EffectiveSpeed * dt; Clamp(Player);
+        Player.X += moveX * Player.EffectiveSpeed * dt; Player.Y += moveY * Player.EffectiveSpeed * dt; ClampToWorld(Player);
 
         // Set body angle based on movement direction
         if (Math.Abs(moveX) > 0 || Math.Abs(moveY) > 0)
         {
             Player.Angle = Math.Atan2(moveY, moveX);
         }
+
+        // Update camera to follow player
+        UpdateCamera();
     }
 
     public void AimPlayer(double aimX, double aimY)
     {
         if (Math.Abs(aimX) > 0 || Math.Abs(aimY) > 0) Player.BarrelAngle = Math.Atan2(aimY, aimX);
+    }
+
+    private void UpdateCamera()
+    {
+        // Camera follows player with buffer from viewport edges
+        double bufferX = GameWidth * 0.45; // Start moving camera when player is 45% from edge
+        double bufferY = GameHeight * 0.45;
+
+        // Get player position relative to current camera
+        double playerScreenX = Player.X - CameraX;
+        double playerScreenY = Player.Y - CameraY;
+
+        // Calculate camera adjustments needed
+        double cameraAdjustX = 0;
+        double cameraAdjustY = 0;
+
+        // Check if player is too close to left edge
+        if (playerScreenX < bufferX)
+        {
+            cameraAdjustX = playerScreenX - bufferX; // Negative value, moves camera left
+        }
+        // Check if player is too close to right edge
+        else if (playerScreenX > GameWidth - bufferX)
+        {
+            cameraAdjustX = playerScreenX - (GameWidth - bufferX); // Positive value, moves camera right
+        }
+
+        // Check if player is too close to top edge
+        if (playerScreenY < bufferY)
+        {
+            cameraAdjustY = playerScreenY - bufferY; // Negative value, moves camera up
+        }
+        // Check if player is too close to bottom edge
+        else if (playerScreenY > GameHeight - bufferY)
+        {
+            cameraAdjustY = playerScreenY - (GameHeight - bufferY); // Positive value, moves camera down
+        }
+
+        // Apply camera adjustments
+        double newCameraX = CameraX + cameraAdjustX;
+        double newCameraY = CameraY + cameraAdjustY;
+
+        // Clamp camera to world bounds
+        CameraX = Math.Clamp(newCameraX, 0, WorldWidth - GameWidth);
+        CameraY = Math.Clamp(newCameraY, 0, WorldHeight - GameHeight);
     }
 
     public void TryFirePlayer(Action? onFire)
@@ -124,7 +184,7 @@ public class BattlefieldService
             ally.Angle = Math.Atan2(moveVY, moveVX);
         }
 
-        ally.X += moveVX * ally.EffectiveSpeed * dt; ally.Y += moveVY * ally.EffectiveSpeed * dt; Clamp(ally);
+        ally.X += moveVX * ally.EffectiveSpeed * dt; ally.Y += moveVY * ally.EffectiveSpeed * dt; ClampToWorld(ally);
         ally.NextFireTimer -= dt; if (ally.NextFireTimer <= 0) { Fire(ally); ally.NextFireTimer = 0.7 + _rand.NextDouble() * 0.6; }
     }
 
@@ -179,7 +239,7 @@ public class BattlefieldService
             enemy.Angle = Math.Atan2(moveVY, moveVX);
         }
 
-        enemy.X += moveVX * enemy.EffectiveSpeed * dt; enemy.Y += moveVY * enemy.EffectiveSpeed * dt; Clamp(enemy);
+        enemy.X += moveVX * enemy.EffectiveSpeed * dt; enemy.Y += moveVY * enemy.EffectiveSpeed * dt; ClampToWorld(enemy);
         enemy.NextFireTimer -= dt; if (enemy.NextFireTimer <= 0) { Fire(enemy); enemy.NextFireTimer = enemy.Behavior == EnemyBehavior.Sniper ? 1.3 + _rand.NextDouble() * 1.0 : 0.8 + _rand.NextDouble() * 0.7; }
     }
 
@@ -195,7 +255,7 @@ public class BattlefieldService
         for (int i = Projectiles.Count - 1; i >= 0; i--)
         {
             var pr = Projectiles[i]; pr.X += Math.Cos(pr.Angle) * pr.Speed * dt; pr.Y += Math.Sin(pr.Angle) * pr.Speed * dt;
-            if (pr.X < 0 || pr.Y < 0 || pr.X > GameWidth || pr.Y > GameHeight) Projectiles.RemoveAt(i);
+            if (pr.X < 0 || pr.Y < 0 || pr.X > WorldWidth || pr.Y > WorldHeight) Projectiles.RemoveAt(i);
         }
     }
 
@@ -247,7 +307,7 @@ public class BattlefieldService
                 var b = all[j]; if (b.Hp <= 0) continue; double dx = b.X - a.X; double dy = b.Y - a.Y; double d2 = dx * dx + dy * dy; if (d2 < 0.01) { dx = 0.5; dy = 0; d2 = 0.25; }
                 double d = Math.Sqrt(d2); if (d < minDist)
                 {
-                    double push = (minDist - d) / 2; double nx = dx / d; double ny = dy / d; a.X -= nx * push; a.Y -= ny * push; b.X += nx * push; b.Y += ny * push; Clamp(a); Clamp(b);
+                    double push = (minDist - d) / 2; double nx = dx / d; double ny = dy / d; a.X -= nx * push; a.Y -= ny * push; b.X += nx * push; b.Y += ny * push; ClampToWorld(a); ClampToWorld(b);
                 }
             }
         }
@@ -257,9 +317,11 @@ public class BattlefieldService
 
     private bool Hit(Projectile pr1, Projectile pr2) => (pr1.X - pr2.X) * (pr1.X - pr2.X) + (pr1.Y - pr2.Y) * (pr1.Y - pr2.Y) < 8 * 8;
 
-    private void Clamp(Tank t)
+    private void ClampToWorld(Tank t)
     {
-        t.X = Math.Clamp(t.X, 20, GameWidth - 20); t.Y = Math.Clamp(t.Y, 20, GameHeight - 20);
+        // Clamp to world bounds
+        t.X = Math.Clamp(t.X, 20, WorldWidth - 20);
+        t.Y = Math.Clamp(t.Y, 20, WorldHeight - 20);
     }
 
     private static void Normalise(ref double x, ref double y)

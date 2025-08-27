@@ -30,6 +30,7 @@ window.addEventListener('gamepaddisconnected', e => console.log('Gamepad disconn
 
 window.tankGame = (function(){
   let ctx, canvas; let over=false; let _ref=null; let _frameFn=null;
+  let radarCtx, radarCanvas; // radar context and canvas
   const explosions=[]; // {x,y,start,duration}
   let audioCtx=null; let _keyHandlerAdded=false; // added flag
   function ensureAudio(){
@@ -70,6 +71,7 @@ window.tankGame = (function(){
     over=false;
     _ref = dotNetRef;
     canvas = document.getElementById('tankCanvas');
+    radarCanvas = document.getElementById('radarCanvas');
     if(!_keyHandlerAdded){
       document.addEventListener('keydown', (e)=>{
         if(e.key==='F11') { e.preventDefault(); toggleFullscreen(); }
@@ -78,6 +80,9 @@ window.tankGame = (function(){
     }
     if(!canvas) return;
     ctx = canvas.getContext('2d');
+    if(radarCanvas) {
+      radarCtx = radarCanvas.getContext('2d');
+    }
   // Prevent vertical scrollbar while game active
   document.body.classList.add('no-vert-scroll');
   // Initial sizing
@@ -90,25 +95,151 @@ window.tankGame = (function(){
       requestAnimationFrame(_frameFn);
     }
   }
-  function draw(player, enemy, projectiles){
+  function draw(player, enemy, projectiles, cameraX, cameraY){
     if(!ctx) return;
+    cameraX = cameraX || 0;
+    cameraY = cameraY || 0;
+    
     ctx.clearRect(0,0,canvas.width,canvas.height);
     ctx.strokeStyle='#333';
-    for(let x=0;x<canvas.width;x+=40){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvas.height); ctx.stroke(); }
-    for(let y=0;y<canvas.height;y+=40){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvas.width,y); ctx.stroke(); }
-    drawTank(player,'#228B22','#90ff90');
+    
+    // Draw grid relative to camera position
+    const gridSize = 40;
+    const startX = Math.floor(cameraX / gridSize) * gridSize;
+    const startY = Math.floor(cameraY / gridSize) * gridSize;
+    
+    for(let x = startX; x < cameraX + canvas.width + gridSize; x += gridSize) {
+      const screenX = x - cameraX;
+      if (screenX >= 0 && screenX <= canvas.width) {
+        ctx.beginPath(); 
+        ctx.moveTo(screenX, 0); 
+        ctx.lineTo(screenX, canvas.height); 
+        ctx.stroke();
+      }
+    }
+    for(let y = startY; y < cameraY + canvas.height + gridSize; y += gridSize) {
+      const screenY = y - cameraY;
+      if (screenY >= 0 && screenY <= canvas.height) {
+        ctx.beginPath(); 
+        ctx.moveTo(0, screenY); 
+        ctx.lineTo(canvas.width, screenY); 
+        ctx.stroke();
+      }
+    }
+    
+    drawTank(player,'#228B22','#90ff90', cameraX, cameraY);
     if(Array.isArray(enemy)){
-      enemy.forEach(e=>{ if(e.hp>0 || e.Hp>0) drawTank(e,'#ff4c4c','#ff9090'); });
+      enemy.forEach(e=>{ if(e.hp>0 || e.Hp>0) drawTank(e,'#ff4c4c','#ff9090', cameraX, cameraY); });
     } else {
-      drawTank(enemy,'#ff4c4c','#ff9090');
+      drawTank(enemy,'#ff4c4c','#ff9090', cameraX, cameraY);
     }
     ctx.fillStyle='#ffdc66';
-    projectiles.forEach(p=>{ ctx.beginPath(); ctx.arc(p.x,p.y,4,0,Math.PI*2); ctx.fill(); });
-    drawExplosions();
+    projectiles.forEach(p=>{ 
+      const screenX = p.x - cameraX;
+      const screenY = p.y - cameraY;
+      if (screenX >= -10 && screenX <= canvas.width + 10 && screenY >= -10 && screenY <= canvas.height + 10) {
+        ctx.beginPath(); 
+        ctx.arc(screenX, screenY, 4, 0, Math.PI*2); 
+        ctx.fill(); 
+      }
+    });
+    drawExplosions(cameraX, cameraY);
+    
+    // Draw radar
+    drawRadar(player, enemy, cameraX, cameraY);
   }
-  function drawTank(t,color,barrelColor){
+  
+  function drawRadar(player, enemy, cameraX, cameraY) {
+    if (!radarCtx || !radarCanvas) return;
+    
+    // World dimensions (from BattlefieldService)
+    const worldWidth = 5000;
+    const worldHeight = 5000;
+    
+    // Radar dimensions
+    const radarWidth = radarCanvas.width;
+    const radarHeight = radarCanvas.height;
+    
+    // Scale factors to map world coordinates to radar coordinates
+    const scaleX = radarWidth / worldWidth;
+    const scaleY = radarHeight / worldHeight;
+    
+    // Clear radar
+    radarCtx.clearRect(0, 0, radarWidth, radarHeight);
+    
+    // Draw world bounds (subtle grid)
+    radarCtx.strokeStyle = '#333';
+    radarCtx.lineWidth = 1;
+    radarCtx.strokeRect(0, 0, radarWidth, radarHeight);
+    
+    // Draw viewport rectangle (current camera view)
+    const viewportX = cameraX * scaleX;
+    const viewportY = cameraY * scaleY;
+    const viewportWidth = canvas.width * scaleX;
+    const viewportHeight = canvas.height * scaleY;
+    
+    radarCtx.strokeStyle = '#666';
+    radarCtx.lineWidth = 1;
+    radarCtx.strokeRect(viewportX, viewportY, viewportWidth, viewportHeight);
+    
+    // Draw player position (green dot)
+    if (player && (player.hp > 0 || player.Hp > 0 || player.hp === undefined)) {
+      const playerX = player.x * scaleX;
+      const playerY = player.y * scaleY;
+      
+      radarCtx.fillStyle = '#22AA22';
+      radarCtx.beginPath();
+      radarCtx.arc(playerX, playerY, 3, 0, Math.PI * 2);
+      radarCtx.fill();
+      
+      // Draw player direction indicator
+      radarCtx.strokeStyle = '#22AA22';
+      radarCtx.lineWidth = 1;
+      const angle = player.angle || 0;
+      const dirLength = 6;
+      radarCtx.beginPath();
+      radarCtx.moveTo(playerX, playerY);
+      radarCtx.lineTo(playerX + Math.cos(angle) * dirLength, playerY + Math.sin(angle) * dirLength);
+      radarCtx.stroke();
+    }
+    
+    // Draw enemy positions (red dots)
+    if (Array.isArray(enemy)) {
+      enemy.forEach(e => {
+        if (e.hp > 0 || e.Hp > 0) {
+          const enemyX = e.x * scaleX;
+          const enemyY = e.y * scaleY;
+          
+          radarCtx.fillStyle = '#AA2222';
+          radarCtx.beginPath();
+          radarCtx.arc(enemyX, enemyY, 2.5, 0, Math.PI * 2);
+          radarCtx.fill();
+        }
+      });
+    } else if (enemy && (enemy.hp > 0 || enemy.Hp > 0)) {
+      const enemyX = enemy.x * scaleX;
+      const enemyY = enemy.y * scaleY;
+      
+      radarCtx.fillStyle = '#AA2222';
+      radarCtx.beginPath();
+      radarCtx.arc(enemyX, enemyY, 2.5, 0, Math.PI * 2);
+      radarCtx.fill();
+    }
+  }
+  function drawTank(t,color,barrelColor,cameraX,cameraY){
+    cameraX = cameraX || 0;
+    cameraY = cameraY || 0;
+    
+    const screenX = t.x - cameraX;
+    const screenY = t.y - cameraY;
+    
+    // Only draw if tank is visible on screen (with some buffer)
+    if (screenX < -50 || screenX > canvas.width + 50 || screenY < -50 || screenY > canvas.height + 50) {
+      return;
+    }
+    
     ctx.save();
-    ctx.translate(t.x,t.y);
+    ctx.translate(screenX, screenY);
     
     // Draw HP bar above tank
     if(t.hp !== undefined || t.Hp !== undefined) {
@@ -158,24 +289,36 @@ window.tankGame = (function(){
     
     ctx.restore();
   }
-  function drawExplosions(){
+  function drawExplosions(cameraX, cameraY){
+    cameraX = cameraX || 0;
+    cameraY = cameraY || 0;
+    
     const now=performance.now();
     for(let i=explosions.length-1;i>=0;i--){
       const e=explosions[i];
       const t=(now-e.start)/e.duration;
       if(t>=1){ explosions.splice(i,1); continue; }
+      
+      const screenX = e.x - cameraX;
+      const screenY = e.y - cameraY;
+      
+      // Only draw if explosion is visible on screen
+      if (screenX < -100 || screenX > canvas.width + 100 || screenY < -100 || screenY > canvas.height + 100) {
+        continue;
+      }
+      
       const r=10 + t*55;
       const alpha = (1-t);
       // outer ring
       ctx.beginPath();
       ctx.strokeStyle=`rgba(255,180,40,${alpha})`;
       ctx.lineWidth=4*(1-t)+1;
-      ctx.arc(e.x,e.y,r,0,Math.PI*2);
+      ctx.arc(screenX, screenY, r, 0, Math.PI*2);
       ctx.stroke();
       // filled core
       ctx.beginPath();
       ctx.fillStyle=`rgba(255,90,0,${alpha*0.6})`;
-      ctx.arc(e.x,e.y,r*0.45,0,Math.PI*2);
+      ctx.arc(screenX, screenY, r*0.45, 0, Math.PI*2);
       ctx.fill();
     }
   }
