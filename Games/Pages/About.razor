@@ -1,0 +1,60 @@
+@page "/about"
+<PageTitle>About - Games</PageTitle>
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="mb-0">
+                        <span class="bi bi-info-circle"></span> About Games
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <h5>Interactive Browser Games Collection</h5>
+                    <p class="lead">A modern Blazor WebAssembly application featuring interactive browser games with gamepad support, responsive design, and Progressive Web App capabilities.</p>
+                    
+                    <h6>Featured Games:</h6>
+                    <ul>
+                        <li><strong>Tamagotchi Pet Game</strong> - Virtual pet care simulation with mood tracking</li>
+                        <li><strong>Tank Battle</strong> - Real-time tank combat with AI enemies</li>
+                    </ul>
+
+                    <h6>Technology Stack:</h6>
+                    <ul>
+                        <li>Blazor WebAssembly (.NET 9.0)</li>
+                        <li>Bootstrap 5 UI Framework</li>
+                        <li>HTML5 Canvas Graphics</li>
+                        <li>Web Audio API</li>
+                        <li>Gamepad API Support</li>
+                        <li>Progressive Web App (PWA)</li>
+                    </ul>
+
+                    <div class="mt-4 p-3 bg-light rounded">
+                        <h6 class="mb-3">Version Information:</h6>
+                        <div class="row">
+                            <div class="col-sm-4"><strong>Version:</strong></div>
+                            <div class="col-sm-8">@VersionInfo.Version</div>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-4"><strong>Build Time:</strong></div>
+                            <div class="col-sm-8">@VersionInfo.BuildTime</div>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-4"><strong>Framework:</strong></div>
+                            <div class="col-sm-8">@VersionInfo.Framework</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer text-muted">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>Games PWA - Built with ❤️ using Blazor</span>
+                        <a href="/" class="btn btn-primary btn-sm">
+                            <span class="bi bi-house"></span> Back to Games
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
