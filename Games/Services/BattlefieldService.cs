@@ -57,12 +57,12 @@ public class BattlefieldService
         });
     }
 
-    public void Update(double dt, Action<Projectile>? onExplosion)
+    public void Update(double dt, Action<Projectile>? onExplosion, Action? onPlayerHit = null)
     {
         HandleAllies(dt);
         HandleEnemies(dt);
         UpdateProjectiles(dt);
-        CheckCollisions(onExplosion);
+        CheckCollisions(onExplosion, onPlayerHit);
         ApplySeparation();
         _fireCooldown -= dt; if (_fireCooldown <= 0) _canFire = true;
     }
@@ -167,12 +167,12 @@ public class BattlefieldService
         }
     }
 
-    private void CheckCollisions(Action<Projectile>? onExplosion)
+    private void CheckCollisions(Action<Projectile>? onExplosion, Action? onPlayerHit)
     {
         for (int i = Projectiles.Count - 1; i >= 0; i--)
         {
             var pr = Projectiles[i];
-            if (Player.Hp > 0 && pr.OwnerTeam != Player.Team && Hit(pr, Player)) { Player.Hp -= 10; onExplosion?.Invoke(pr); Projectiles.RemoveAt(i); continue; }
+            if (Player.Hp > 0 && pr.OwnerTeam != Player.Team && Hit(pr, Player)) { Player.Hp -= 10; onExplosion?.Invoke(pr); onPlayerHit?.Invoke(); Projectiles.RemoveAt(i); continue; }
             bool removed = false;
             for (int a = 0; a < Allies.Count && !removed; a++)
             {
