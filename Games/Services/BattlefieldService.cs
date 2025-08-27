@@ -103,8 +103,8 @@ public class BattlefieldService
     private void UpdateCamera()
     {
         // Camera follows player with buffer from viewport edges
-        double bufferX = GameWidth * 0.25; // Start moving camera when player is 25% from edge
-        double bufferY = GameHeight * 0.25;
+        double bufferX = GameWidth * 0.45; // Start moving camera when player is 45% from edge
+        double bufferY = GameHeight * 0.45;
 
         // Get player position relative to current camera
         double playerScreenX = Player.X - CameraX;
