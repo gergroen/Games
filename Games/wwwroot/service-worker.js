@@ -18,7 +18,18 @@ const staticUrlsToCache = [
 const essentialBlazorFiles = [
 '/_framework/blazor.webassembly.js',
 '/_framework/blazor.boot.json',
-'/_framework/dotnet.js'
+'/_framework/dotnet.js',
+// Core runtime files needed for offline startup
+'/_framework/dotnet.native.50iqa8w3ys.js',
+'/_framework/dotnet.runtime.ew19f13umk.js',
+'/_framework/dotnet.native.pk43x8e436.wasm',
+// Core assemblies needed for Blazor to start
+'/_framework/System.Runtime.InteropServices.JavaScript.wt3af2xdkg.wasm',
+'/_framework/System.Private.CoreLib.9ecf2cskpd.wasm',
+// ICU data files for globalization
+'/_framework/icudt_no_CJK.lfu7j35m59.dat',
+'/_framework/icudt_EFIGS.tptq2av103.dat',
+'/_framework/icudt_CJK.tjcz0u77k5.dat'
 ];
 // Install event - cache essential files
 self.addEventListener('install', event => {
@@ -34,6 +45,49 @@ return cache.addAll(staticUrlsToCache);
 caches.open(CACHE_NAME).then(cache => {
 console.log('Caching essential Blazor files');
 return cache.addAll(essentialBlazorFiles);
+}),
+// Try to load and cache additional critical files from blazor.boot.json
+caches.open(CACHE_NAME).then(cache => {
+console.log('Attempting to cache additional critical files');
+return fetch('/_framework/blazor.boot.json')
+.then(response => response.json())
+.then(bootData => {
+const additionalCriticalFiles = [];
+// Add core assembly files
+if (bootData.resources && bootData.resources.coreAssembly) {
+Object.keys(bootData.resources.coreAssembly).forEach(file => {
+additionalCriticalFiles.push(`/_framework/${file}`);
+});
+}
+// Add JS module files
+if (bootData.resources && bootData.resources.jsModuleNative) {
+Object.keys(bootData.resources.jsModuleNative).forEach(file => {
+additionalCriticalFiles.push(`/_framework/${file}`);
+});
+}
+if (bootData.resources && bootData.resources.jsModuleRuntime) {
+Object.keys(bootData.resources.jsModuleRuntime).forEach(file => {
+additionalCriticalFiles.push(`/_framework/${file}`);
+});
+}
+// Add WASM native files
+if (bootData.resources && bootData.resources.wasmNative) {
+Object.keys(bootData.resources.wasmNative).forEach(file => {
+additionalCriticalFiles.push(`/_framework/${file}`);
+});
+}
+console.log('Additional critical files to cache:', additionalCriticalFiles);
+// Cache each file individually to avoid failures breaking the whole install
+const cachePromises = additionalCriticalFiles.map(file => {
+return cache.add(file).catch(error => {
+console.warn('Failed to cache critical file during install:', file, error);
+});
+});
+return Promise.all(cachePromises);
+})
+.catch(error => {
+console.warn('Could not load blazor.boot.json during install, using basic file list', error);
+});
 })
 ])
 .then(() => {
@@ -150,6 +204,17 @@ return response;
 })
 .catch(error => {
 console.error('Failed to fetch framework file:', url.pathname, error);
+// For critical files, provide better error handling
+if (url.pathname.includes('blazor.boot.json') ||
+url.pathname.includes('dotnet.js') ||
+url.pathname.includes('blazor.webassembly.js')) {
+console.error('Critical Blazor file missing from cache:', url.pathname);
+// Return a response that won't break Blazor startup completely
+return new Response(JSON.stringify({error: 'Critical file not available offline'}), {
+status: 503,
+headers: { 'Content-Type': 'application/json' }
+});
+}
 return new Response('Resource not available offline', {
 status: 503,
 headers: { 'Content-Type': 'text/plain' }
