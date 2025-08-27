@@ -90,25 +90,70 @@ window.tankGame = (function(){
       requestAnimationFrame(_frameFn);
     }
   }
-  function draw(player, enemy, projectiles){
+  function draw(player, enemy, projectiles, cameraX, cameraY){
     if(!ctx) return;
+    cameraX = cameraX || 0;
+    cameraY = cameraY || 0;
+    
     ctx.clearRect(0,0,canvas.width,canvas.height);
     ctx.strokeStyle='#333';
-    for(let x=0;x<canvas.width;x+=40){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvas.height); ctx.stroke(); }
-    for(let y=0;y<canvas.height;y+=40){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvas.width,y); ctx.stroke(); }
-    drawTank(player,'#228B22','#90ff90');
+    
+    // Draw grid relative to camera position
+    const gridSize = 40;
+    const startX = Math.floor(cameraX / gridSize) * gridSize;
+    const startY = Math.floor(cameraY / gridSize) * gridSize;
+    
+    for(let x = startX; x < cameraX + canvas.width + gridSize; x += gridSize) {
+      const screenX = x - cameraX;
+      if (screenX >= 0 && screenX <= canvas.width) {
+        ctx.beginPath(); 
+        ctx.moveTo(screenX, 0); 
+        ctx.lineTo(screenX, canvas.height); 
+        ctx.stroke();
+      }
+    }
+    for(let y = startY; y < cameraY + canvas.height + gridSize; y += gridSize) {
+      const screenY = y - cameraY;
+      if (screenY >= 0 && screenY <= canvas.height) {
+        ctx.beginPath(); 
+        ctx.moveTo(0, screenY); 
+        ctx.lineTo(canvas.width, screenY); 
+        ctx.stroke();
+      }
+    }
+    
+    drawTank(player,'#228B22','#90ff90', cameraX, cameraY);
     if(Array.isArray(enemy)){
-      enemy.forEach(e=>{ if(e.hp>0 || e.Hp>0) drawTank(e,'#ff4c4c','#ff9090'); });
+      enemy.forEach(e=>{ if(e.hp>0 || e.Hp>0) drawTank(e,'#ff4c4c','#ff9090', cameraX, cameraY); });
     } else {
-      drawTank(enemy,'#ff4c4c','#ff9090');
+      drawTank(enemy,'#ff4c4c','#ff9090', cameraX, cameraY);
     }
     ctx.fillStyle='#ffdc66';
-    projectiles.forEach(p=>{ ctx.beginPath(); ctx.arc(p.x,p.y,4,0,Math.PI*2); ctx.fill(); });
-    drawExplosions();
+    projectiles.forEach(p=>{ 
+      const screenX = p.x - cameraX;
+      const screenY = p.y - cameraY;
+      if (screenX >= -10 && screenX <= canvas.width + 10 && screenY >= -10 && screenY <= canvas.height + 10) {
+        ctx.beginPath(); 
+        ctx.arc(screenX, screenY, 4, 0, Math.PI*2); 
+        ctx.fill(); 
+      }
+    });
+    drawExplosions(cameraX, cameraY);
   }
-  function drawTank(t,color,barrelColor){
+  function drawTank(t,color,barrelColor,cameraX,cameraY){
+    cameraX = cameraX || 0;
+    cameraY = cameraY || 0;
+    
+    const screenX = t.x - cameraX;
+    const screenY = t.y - cameraY;
+    
+    // Only draw if tank is visible on screen (with some buffer)
+    if (screenX < -50 || screenX > canvas.width + 50 || screenY < -50 || screenY > canvas.height + 50) {
+      return;
+    }
+    
     ctx.save();
-    ctx.translate(t.x,t.y);
+    ctx.translate(screenX, screenY);
     
     // Draw HP bar above tank
     if(t.hp !== undefined || t.Hp !== undefined) {
@@ -158,24 +203,36 @@ window.tankGame = (function(){
     
     ctx.restore();
   }
-  function drawExplosions(){
+  function drawExplosions(cameraX, cameraY){
+    cameraX = cameraX || 0;
+    cameraY = cameraY || 0;
+    
     const now=performance.now();
     for(let i=explosions.length-1;i>=0;i--){
       const e=explosions[i];
       const t=(now-e.start)/e.duration;
       if(t>=1){ explosions.splice(i,1); continue; }
+      
+      const screenX = e.x - cameraX;
+      const screenY = e.y - cameraY;
+      
+      // Only draw if explosion is visible on screen
+      if (screenX < -100 || screenX > canvas.width + 100 || screenY < -100 || screenY > canvas.height + 100) {
+        continue;
+      }
+      
       const r=10 + t*55;
       const alpha = (1-t);
       // outer ring
       ctx.beginPath();
       ctx.strokeStyle=`rgba(255,180,40,${alpha})`;
       ctx.lineWidth=4*(1-t)+1;
-      ctx.arc(e.x,e.y,r,0,Math.PI*2);
+      ctx.arc(screenX, screenY, r, 0, Math.PI*2);
       ctx.stroke();
       // filled core
       ctx.beginPath();
       ctx.fillStyle=`rgba(255,90,0,${alpha*0.6})`;
-      ctx.arc(e.x,e.y,r*0.45,0,Math.PI*2);
+      ctx.arc(screenX, screenY, r*0.45, 0, Math.PI*2);
       ctx.fill();
     }
   }
