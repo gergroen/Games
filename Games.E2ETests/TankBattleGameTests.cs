@@ -5,15 +5,17 @@ namespace Games.E2ETests;
 
 [TestClass]
 [TestCategory("RequiresBrowser")]
-public class TankBattleGameTests : PageTest
+public class TankBattleGameTests : BaseE2ETest
 {
-    private const string BaseUrl = "http://localhost:5080";
 
     [TestMethod]
     public async Task NavigateToTanks_ShouldDisplayBattlefield()
     {
         // Navigate to the Tank Battle page
         await Page.GotoAsync($"{BaseUrl}/tanks");
+
+        // Wait for Blazor to fully load
+        await WaitForBlazorToLoad();
 
         // Verify page title
         await Expect(Page).ToHaveTitleAsync("Games");
@@ -51,6 +53,10 @@ public class TankBattleGameTests : PageTest
 
         // Wait for the game to load
         await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        // Ensure tank game container is loaded first
+        var tankContainer = Page.Locator(".tank-game-container");
+        await Expect(tankContainer).ToBeVisibleAsync();
 
         // Find the Fire button
         var fireButton = Page.Locator("button:has-text('FIRE')");
@@ -92,6 +98,10 @@ public class TankBattleGameTests : PageTest
         // Wait for the game to load
         await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
 
+        // Wait for the tank game container to be visible first
+        var tankContainer = Page.Locator(".tank-game-container");
+        await Expect(tankContainer).ToBeVisibleAsync();
+
         // Find the Restart button by its aria-label
         var restartButton = Page.Locator("button[aria-label='Restart']");
         await Expect(restartButton).ToBeVisibleAsync();
@@ -112,6 +122,10 @@ public class TankBattleGameTests : PageTest
 
         // Wait for the game to load
         await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        // Wait for the tank game container to be visible first
+        var tankContainer = Page.Locator(".tank-game-container");
+        await Expect(tankContainer).ToBeVisibleAsync();
 
         // Find the Fullscreen button specifically by its aria-label
         var fullscreenButton = Page.Locator("button[aria-label='Fullscreen']");

@@ -5,15 +5,17 @@ namespace Games.E2ETests;
 
 [TestClass]
 [TestCategory("RequiresBrowser")]
-public class TamagotchiGameTests : PageTest
+public class TamagotchiGameTests : BaseE2ETest
 {
-    private const string BaseUrl = "http://localhost:5080";
 
     [TestMethod]
     public async Task NavigateToTamagotchi_ShouldDisplayPetWithStats()
     {
         // Navigate to the Tamagotchi page
         await Page.GotoAsync(BaseUrl);
+
+        // Wait for Blazor to fully load
+        await WaitForBlazorToLoad();
 
         // Verify page title
         await Expect(Page).ToHaveTitleAsync("Games");
@@ -37,6 +39,13 @@ public class TamagotchiGameTests : PageTest
     public async Task FeedButton_ShouldBeClickableAndDisplayCorrectText()
     {
         await Page.GotoAsync(BaseUrl);
+
+        // Wait for the page to fully load
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        // Ensure pet container is loaded first
+        var petContainer = Page.Locator(".pet-container");
+        await Expect(petContainer).ToBeVisibleAsync();
 
         // Find the Feed button (with A gamepad key indicator)
         var feedButton = Page.Locator("button:has-text('Feed (A)')");
@@ -89,9 +98,16 @@ public class TamagotchiGameTests : PageTest
     {
         await Page.GotoAsync(BaseUrl);
 
+        // Wait for the page to fully load
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        // Wait for the pet container to be visible first (ensures Blazor has rendered)
+        var petContainer = Page.Locator(".pet-container");
+        await Expect(petContainer).ToBeVisibleAsync();
+
         // Verify gamepad connection status is shown
-        // This will typically show "No gamepad connected" in a test environment
-        var connectionStatus = Page.Locator("text=/Gamepad Connected:/");
+        // This will typically show "Gamepad Connected: No" in a test environment
+        var connectionStatus = Page.Locator("text=Gamepad Connected:");
         await Expect(connectionStatus).ToBeVisibleAsync();
     }
 

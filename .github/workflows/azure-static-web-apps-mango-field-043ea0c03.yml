@@ -40,8 +40,20 @@ jobs:
         run: |
           cd Games.E2ETests
           echo "Installing Playwright browsers..."
-          pwsh bin/Debug/net9.0/playwright.ps1 install --with-deps chromium
-          echo "✅ Playwright browsers installed successfully"
+          # Set environment variables to improve download reliability
+          export PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT=60000
+          export PLAYWRIGHT_DOWNLOAD_PROGRESS_TIMEOUT=60000
+          # Try to install Playwright browsers with retry logic
+          for i in {1..3}; do
+            echo "Installation attempt $i..."
+            if timeout 300 pwsh bin/Debug/net9.0/playwright.ps1 install --with-deps chromium; then
+              echo "✅ Playwright browsers installed successfully"
+              break
+            else
+              echo "⚠️ Installation attempt $i failed, retrying..."
+              sleep 10
+            fi
+          done
       
       - name: Start Games application
         run: |
@@ -56,7 +68,7 @@ jobs:
       - name: Run E2E tests
         run: |
           echo "Running complete E2E test suite..."
-          dotnet test Games.E2ETests --logger "console;verbosity=detailed" --logger "trx;LogFileName=test-results.trx"
+          dotnet test Games.E2ETests --settings Games.E2ETests/playwright.runsettings --logger "console;verbosity=detailed" --logger "trx;LogFileName=test-results.trx"
           echo "✅ All E2E tests passed successfully"
         id: e2e-tests
       

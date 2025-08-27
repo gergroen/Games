@@ -4,6 +4,21 @@
     <BrowserName>chromium</BrowserName>
     <LaunchOptions>
       <Headless>true</Headless>
+      <Args>
+        <string>--no-sandbox</string>
+        <string>--disable-setuid-sandbox</string>
+        <string>--disable-dev-shm-usage</string>
+        <string>--disable-gpu</string>
+      </Args>
     </LaunchOptions>
+    <BrowserNewContextOptions>
+      <IgnoreHTTPSErrors>true</IgnoreHTTPSErrors>
+    </BrowserNewContextOptions>
   </Playwright>
+  <MSTest>
+    <Parallelize>
+      <Workers>1</Workers>
+      <Scope>MethodLevel</Scope>
+    </Parallelize>
+  </MSTest>
 </RunSettings>
