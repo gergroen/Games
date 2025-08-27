@@ -92,8 +92,8 @@ public class TankBattleGameTests : PageTest
         // Wait for the game to load
         await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
 
-        // Find the Restart button
-        var restartButton = Page.Locator("button:has-text('Restart')");
+        // Find the Restart button by its aria-label
+        var restartButton = Page.Locator("button[aria-label='Restart']");
         await Expect(restartButton).ToBeVisibleAsync();
         await Expect(restartButton).ToBeEnabledAsync();
 
@@ -113,8 +113,8 @@ public class TankBattleGameTests : PageTest
         // Wait for the game to load
         await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
 
-        // Find the Fullscreen button (usually represented by an icon)
-        var fullscreenButton = Page.Locator("button.btn-icon");
+        // Find the Fullscreen button specifically by its aria-label
+        var fullscreenButton = Page.Locator("button[aria-label='Fullscreen']");
         await Expect(fullscreenButton).ToBeVisibleAsync();
         await Expect(fullscreenButton).ToBeEnabledAsync();
 

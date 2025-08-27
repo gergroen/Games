@@ -91,7 +91,7 @@ public class TamagotchiGameTests : PageTest
 
         // Verify gamepad connection status is shown
         // This will typically show "No gamepad connected" in a test environment
-        var connectionStatus = Page.Locator("text=/gamepad/i");
+        var connectionStatus = Page.Locator("text=/Gamepad Connected:/");
         await Expect(connectionStatus).ToBeVisibleAsync();
     }
 
