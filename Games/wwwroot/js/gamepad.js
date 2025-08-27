@@ -171,6 +171,22 @@ window.tankGame = (function(){
     osc.connect(gain).connect(audioCtx.destination);
     osc.start(now); osc.stop(now+0.22);
   }
+  function vibrate(){
+    // Trigger gamepad vibration when player is hit
+    const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+    for(let i = 0; i < pads.length; i++){
+      const gp = pads[i];
+      if(!gp) continue;
+      if(gp.vibrationActuator && gp.vibrationActuator.type === 'dual-rumble'){
+        // Strong hit vibration: 400ms with strong magnitude
+        gp.vibrationActuator.playEffect('dual-rumble', {
+          duration: 400,
+          strongMagnitude: 0.8,
+          weakMagnitude: 0.6
+        }).catch(()=>{}); // Ignore vibration errors
+      }
+    }
+  }
   function toggleFullscreen(){
     const container=document.getElementById('tankGameContainer')||document.getElementById('tankCanvas');
     if(!container) return;
@@ -258,5 +274,5 @@ window.tankGame = (function(){
   function cleanup(){
     document.body.classList.remove('no-vert-scroll');
   }
-  return { init, draw, gameOver, addExplosion, playOutcome, playFire, toggleFullscreen, cleanup };
+  return { init, draw, gameOver, addExplosion, playOutcome, playFire, vibrate, toggleFullscreen, cleanup };
 })();
