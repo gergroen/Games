@@ -10,8 +10,87 @@ on:
       - master
 
 jobs:
+  e2e_tests:
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
+    runs-on: ubuntu-latest
+    name: E2E Tests
+    outputs:
+      test-result: ${{ steps.e2e-tests.outcome }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          lfs: false
+      
+      - name: Setup .NET 9.0
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '9.0.x'
+      
+      - name: Restore dependencies
+        run: dotnet restore Games.sln
+      
+      - name: Build Games application
+        run: dotnet build Games.sln --no-restore
+      
+      - name: Build E2E tests
+        run: dotnet build Games.E2ETests --no-restore
+      
+      - name: Install Playwright browsers
+        run: |
+          cd Games.E2ETests
+          echo "Installing Playwright browsers..."
+          # Set environment variables to improve download reliability
+          export PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT=60000
+          export PLAYWRIGHT_DOWNLOAD_PROGRESS_TIMEOUT=60000
+          # Try to install Playwright browsers with retry logic
+          for i in {1..3}; do
+            echo "Installation attempt $i..."
+            if timeout 300 pwsh bin/Debug/net9.0/playwright.ps1 install --with-deps chromium; then
+              echo "✅ Playwright browsers installed successfully"
+              break
+            else
+              echo "⚠️ Installation attempt $i failed, retrying..."
+              sleep 10
+            fi
+          done
+      
+      - name: Start Games application
+        run: |
+          cd Games
+          dotnet run &
+          echo $! > app.pid
+          # Wait for application to start
+          timeout 60 bash -c 'until curl -f http://localhost:5080; do sleep 2; done'
+        env:
+          ASPNETCORE_ENVIRONMENT: Production
+      
+      - name: Run E2E tests
+        run: |
+          echo "Running complete E2E test suite..."
+          dotnet test Games.E2ETests --settings Games.E2ETests/playwright.runsettings --logger "console;verbosity=detailed" --logger "trx;LogFileName=test-results.trx"
+          echo "✅ All E2E tests passed successfully"
+        id: e2e-tests
+      
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-test-results
+          path: 'Games.E2ETests/TestResults/*.trx'
+      
+      - name: Stop Games application
+        if: always()
+        run: |
+          cd Games
+          if [ -f app.pid ]; then
+            kill $(cat app.pid) || true
+            rm app.pid
+          fi
+
   build_and_deploy_job:
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
+    needs: e2e_tests
     runs-on: ubuntu-latest
     name: Build and Deploy Job
     steps:
@@ -19,6 +98,26 @@ jobs:
         with:
           submodules: true
           lfs: false
+      
+      - name: Check E2E Test Results
+        run: |
+          echo "📊 E2E Test Results Summary:"
+          
+          if [ "${{ needs.e2e_tests.outputs.test-result }}" = "failure" ]; then
+            echo "❌ E2E tests failed - blocking deployment"
+            echo "ℹ️  Please fix the failing tests before deployment can proceed"
+            echo "ℹ️  Check the test results artifact for detailed failure information"
+            echo ""
+            echo "🚫 Deployment blocked due to test failures"
+            exit 1
+          else
+            echo "✅ E2E tests passed successfully"
+            echo "✅ All systems validated - proceeding with deployment"
+            echo ""
+            echo "🚀 Proceeding with deployment..."
+            echo "ℹ️  The application has been validated and is ready for production"
+          fi
+      
       - name: Build And Deploy
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
