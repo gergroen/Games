@@ -30,6 +30,7 @@ window.addEventListener('gamepaddisconnected', e => console.log('Gamepad disconn
 
 window.tankGame = (function(){
   let ctx, canvas; let over=false; let _ref=null; let _frameFn=null;
+  let radarCtx, radarCanvas; // radar context and canvas
   const explosions=[]; // {x,y,start,duration}
   let audioCtx=null; let _keyHandlerAdded=false; // added flag
   function ensureAudio(){
@@ -70,6 +71,7 @@ window.tankGame = (function(){
     over=false;
     _ref = dotNetRef;
     canvas = document.getElementById('tankCanvas');
+    radarCanvas = document.getElementById('radarCanvas');
     if(!_keyHandlerAdded){
       document.addEventListener('keydown', (e)=>{
         if(e.key==='F11') { e.preventDefault(); toggleFullscreen(); }
@@ -78,6 +80,9 @@ window.tankGame = (function(){
     }
     if(!canvas) return;
     ctx = canvas.getContext('2d');
+    if(radarCanvas) {
+      radarCtx = radarCanvas.getContext('2d');
+    }
   // Prevent vertical scrollbar while game active
   document.body.classList.add('no-vert-scroll');
   // Initial sizing
@@ -139,6 +144,87 @@ window.tankGame = (function(){
       }
     });
     drawExplosions(cameraX, cameraY);
+    
+    // Draw radar
+    drawRadar(player, enemy, cameraX, cameraY);
+  }
+  
+  function drawRadar(player, enemy, cameraX, cameraY) {
+    if (!radarCtx || !radarCanvas) return;
+    
+    // World dimensions (from BattlefieldService)
+    const worldWidth = 5000;
+    const worldHeight = 5000;
+    
+    // Radar dimensions
+    const radarWidth = radarCanvas.width;
+    const radarHeight = radarCanvas.height;
+    
+    // Scale factors to map world coordinates to radar coordinates
+    const scaleX = radarWidth / worldWidth;
+    const scaleY = radarHeight / worldHeight;
+    
+    // Clear radar
+    radarCtx.clearRect(0, 0, radarWidth, radarHeight);
+    
+    // Draw world bounds (subtle grid)
+    radarCtx.strokeStyle = '#333';
+    radarCtx.lineWidth = 1;
+    radarCtx.strokeRect(0, 0, radarWidth, radarHeight);
+    
+    // Draw viewport rectangle (current camera view)
+    const viewportX = cameraX * scaleX;
+    const viewportY = cameraY * scaleY;
+    const viewportWidth = canvas.width * scaleX;
+    const viewportHeight = canvas.height * scaleY;
+    
+    radarCtx.strokeStyle = '#666';
+    radarCtx.lineWidth = 1;
+    radarCtx.strokeRect(viewportX, viewportY, viewportWidth, viewportHeight);
+    
+    // Draw player position (green dot)
+    if (player && (player.hp > 0 || player.Hp > 0 || player.hp === undefined)) {
+      const playerX = player.x * scaleX;
+      const playerY = player.y * scaleY;
+      
+      radarCtx.fillStyle = '#22AA22';
+      radarCtx.beginPath();
+      radarCtx.arc(playerX, playerY, 3, 0, Math.PI * 2);
+      radarCtx.fill();
+      
+      // Draw player direction indicator
+      radarCtx.strokeStyle = '#22AA22';
+      radarCtx.lineWidth = 1;
+      const angle = player.angle || 0;
+      const dirLength = 6;
+      radarCtx.beginPath();
+      radarCtx.moveTo(playerX, playerY);
+      radarCtx.lineTo(playerX + Math.cos(angle) * dirLength, playerY + Math.sin(angle) * dirLength);
+      radarCtx.stroke();
+    }
+    
+    // Draw enemy positions (red dots)
+    if (Array.isArray(enemy)) {
+      enemy.forEach(e => {
+        if (e.hp > 0 || e.Hp > 0) {
+          const enemyX = e.x * scaleX;
+          const enemyY = e.y * scaleY;
+          
+          radarCtx.fillStyle = '#AA2222';
+          radarCtx.beginPath();
+          radarCtx.arc(enemyX, enemyY, 2.5, 0, Math.PI * 2);
+          radarCtx.fill();
+        }
+      });
+    } else if (enemy && (enemy.hp > 0 || enemy.Hp > 0)) {
+      const enemyX = enemy.x * scaleX;
+      const enemyY = enemy.y * scaleY;
+      
+      radarCtx.fillStyle = '#AA2222';
+      radarCtx.beginPath();
+      radarCtx.arc(enemyX, enemyY, 2.5, 0, Math.PI * 2);
+      radarCtx.fill();
+    }
   }
   function drawTank(t,color,barrelColor,cameraX,cameraY){
     cameraX = cameraX || 0;

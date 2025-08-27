@@ -9,6 +9,11 @@
 /* Icon buttons in HUD (restart/fullscreen) */
 .btn-icon { width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; padding:0; font-size:1rem; line-height:1; }
 
+/* Radar styling */
+.radar-container { position: absolute; top: 10px; right: 10px; background: rgba(0, 0, 0, 0.8); border: 2px solid #555; border-radius: 8px; padding: 8px; pointer-events: none; }
+.radar-title { color: #aaa; font-size: 0.7rem; font-weight: bold; text-align: center; margin-bottom: 4px; font-family: monospace; }
+#radarCanvas { display: block; border: 1px solid #777; background: #111; }
+
 /* Joystick styles */
 .joystick-wrapper { pointer-events:auto; display:flex; flex-direction:column; align-items:center; gap:0.75rem; }
 .joystick-wrapper.right { align-items:flex-end; }
@@ -19,5 +24,8 @@
     .joystick { width:120px; height:120px; }
     .joystick .stick { width:60px; height:60px; margin:-30px 0 0 -30px; }
     .ctrl-btn { width:80px; height:80px; }
+    .radar-container { top: 5px; right: 5px; padding: 6px; }
+    .radar-title { font-size: 0.6rem; }
+    #radarCanvas { width: 100px; height: 100px; }
 }
 @media (min-width: 900px){ .control-overlay { max-width:860px; margin:0 auto; left:0; right:0; } }
