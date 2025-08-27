@@ -101,7 +101,7 @@ window.tankGame = (function(){
           
           // Place track points behind the movement direction
           // Add multiple track points along the movement path for better trail effect
-          const numTrackPoints = Math.max(1, Math.floor(distance / 8)); // One track every 8 pixels
+          const numTrackPoints = Math.max(1, Math.floor(distance / 6)); // One track every 6 pixels for better coverage
           
           for(let i = 0; i < numTrackPoints; i++) {
             const t = i / numTrackPoints; // Progress along the movement path (0 to 1)
@@ -109,7 +109,7 @@ window.tankGame = (function(){
             const trackY = lastPos.y + dy * t;
             
             // Offset the track point backwards from the movement direction
-            const offsetDistance = 16; // Distance behind the tank center
+            const offsetDistance = 20; // Slightly more distance behind the tank center
             const offsetX = trackX - Math.cos(movementAngle) * offsetDistance;
             const offsetY = trackY - Math.sin(movementAngle) * offsetDistance;
             
@@ -226,37 +226,37 @@ window.tankGame = (function(){
       const t=(now-track.start)/track.duration;
       if(t>=1){ tracks.splice(i,1); continue; }
       
-      const alpha = (1-t) * 0.7; // Increased opacity for better visibility
+      const alpha = (1-t) * 0.8; // Higher opacity for better visibility
       
       ctx.save();
       ctx.translate(track.x, track.y);
       ctx.rotate(track.angle);
       
       // Draw tank track marks - two parallel lines representing treads
-      // Oriented perpendicular to movement direction for realistic tire tracks
-      ctx.strokeStyle=`rgba(120,100,80,${alpha})`; // Darker brown/dirt color for better visibility
-      ctx.lineWidth=4; // Slightly thicker lines
+      // Oriented parallel to movement direction to show where tank treads went
+      ctx.strokeStyle=`rgba(101,67,33,${alpha})`; // Darker brown/dirt color for better visibility
+      ctx.lineWidth=3; // Good thickness for visibility
       ctx.lineCap='round';
       
-      // Left tread mark (perpendicular to movement direction)
+      // Left tread mark (parallel to movement direction)
       ctx.beginPath();
-      ctx.moveTo(-8, -12);
-      ctx.lineTo(8, -12);
+      ctx.moveTo(-12, -6);
+      ctx.lineTo(12, -6);
       ctx.stroke();
       
-      // Right tread mark (perpendicular to movement direction)
+      // Right tread mark (parallel to movement direction)
       ctx.beginPath();
-      ctx.moveTo(-8, 12);
-      ctx.lineTo(8, 12);
+      ctx.moveTo(-12, 6);
+      ctx.lineTo(12, 6);
       ctx.stroke();
       
-      // Add small cross-hatches for texture (also perpendicular)
-      ctx.lineWidth=2; // Thicker texture lines
-      ctx.strokeStyle=`rgba(80,60,40,${alpha * 0.8})`; // Slightly different color for texture
-      for(let offset = -6; offset <= 6; offset += 4) {
+      // Add small cross-hatches for texture (perpendicular to treads)
+      ctx.lineWidth=2;
+      ctx.strokeStyle=`rgba(139,69,19,${alpha * 0.9})`; // Saddle brown color for texture
+      for(let offset = -8; offset <= 8; offset += 4) {
         ctx.beginPath();
-        ctx.moveTo(offset, -12);
-        ctx.lineTo(offset, 12);
+        ctx.moveTo(offset, -6);
+        ctx.lineTo(offset, 6);
         ctx.stroke();
       }
       
