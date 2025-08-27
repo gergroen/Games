@@ -10,8 +10,60 @@ on:
       - master
 
 jobs:
+  e2e_tests:
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
+    runs-on: ubuntu-latest
+    name: E2E Tests
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: true
+          lfs: false
+      
+      - name: Setup .NET 9.0
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '9.0.x'
+      
+      - name: Restore dependencies
+        run: dotnet restore Games.sln
+      
+      - name: Build Games application
+        run: dotnet build Games.sln --no-restore
+      
+      - name: Build E2E tests
+        run: dotnet build Games.E2ETests --no-restore
+      
+      - name: Install Playwright browsers
+        run: |
+          cd Games.E2ETests
+          pwsh bin/Debug/net9.0/playwright.ps1 install --with-deps
+      
+      - name: Start Games application
+        run: |
+          cd Games
+          dotnet run &
+          echo $! > app.pid
+          # Wait for application to start
+          timeout 60 bash -c 'until curl -f http://localhost:5080; do sleep 2; done'
+        env:
+          ASPNETCORE_ENVIRONMENT: Production
+      
+      - name: Run E2E tests
+        run: dotnet test Games.E2ETests --logger "console;verbosity=detailed"
+      
+      - name: Stop Games application
+        if: always()
+        run: |
+          cd Games
+          if [ -f app.pid ]; then
+            kill $(cat app.pid) || true
+            rm app.pid
+          fi
+
   build_and_deploy_job:
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
+    needs: e2e_tests
     runs-on: ubuntu-latest
     name: Build and Deploy Job
     steps:
