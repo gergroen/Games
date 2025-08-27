@@ -1,0 +1,329 @@
+# GitHub Copilot Setup Steps for Games Repository
+# Comprehensive setup guide for the Blazor WebAssembly Games application
+
+name: "Games Repository Setup"
+description: "Setup steps for the Blazor WebAssembly Games application with Tamagotchi and Tank Battle games"
+version: "1.0"
+
+# System requirements and prerequisites
+prerequisites:
+  operating_systems:
+    - name: "Windows"
+      versions: ["10", "11", "Server 2019+"]
+      notes: "PowerShell 5.1+ required"
+    - name: "macOS"
+      versions: ["12+", "Monterey or later"]
+      notes: "Xcode command line tools recommended"
+    - name: "Linux"
+      distributions: ["Ubuntu 18.04+", "Debian 10+", "CentOS 7+", "RHEL 8+"]
+      notes: "curl and wget required"
+  
+  required_tools:
+    - name: ".NET 9.0 SDK"
+      minimum_version: "9.0.0"
+      download_url: "https://dotnet.microsoft.com/download/dotnet/9.0"
+      verification_command: "dotnet --version"
+    - name: "Git"
+      minimum_version: "2.20+"
+      download_url: "https://git-scm.com/downloads"
+      verification_command: "git --version"
+  
+  optional_tools:
+    - name: "Visual Studio 2022"
+      version: "17.8+"
+      notes: "For Windows development with full IDE support"
+    - name: "Visual Studio Code"
+      notes: "Cross-platform editor with C# extension"
+    - name: "JetBrains Rider"
+      notes: "Cross-platform .NET IDE"
+
+# Step-by-step setup process
+setup_steps:
+  
+  # Step 1: Environment Setup
+  - step: 1
+    name: "Install .NET 9.0 SDK"
+    description: "Install the required .NET 9.0 SDK for building and running the application"
+    platforms:
+      windows:
+        commands:
+          - description: "Download and install from Microsoft"
+            command: "# Download from https://dotnet.microsoft.com/download/dotnet/9.0"
+          - description: "Verify installation"
+            command: "dotnet --version"
+        expected_output: "9.0.x"
+      
+      linux_macos:
+        commands:
+          - description: "Download installation script"
+            command: "wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh"
+          - description: "Make script executable"
+            command: "chmod +x dotnet-install.sh"
+          - description: "Install .NET 9.0"
+            command: "./dotnet-install.sh --channel 9.0"
+          - description: "Add to PATH"
+            command: 'export PATH="$HOME/.dotnet:$PATH"'
+          - description: "Verify installation"
+            command: "dotnet --version"
+        expected_output: "9.0.x"
+        notes: "Add the export command to your shell profile (.bashrc, .zshrc, etc.)"
+
+  # Step 2: Repository Setup
+  - step: 2
+    name: "Clone and Setup Repository"
+    description: "Clone the Games repository and prepare the development environment"
+    commands:
+      - description: "Clone the repository"
+        command: "git clone https://github.com/gergroen/Games.git"
+      - description: "Navigate to project directory"
+        command: "cd Games"
+      - description: "Verify repository structure"
+        command: "ls -la"
+    expected_files:
+      - "Games.sln"
+      - "Games/"
+      - "Games.E2ETests/"
+      - "README.md"
+      - ".github/"
+
+  # Step 3: Build Process
+  - step: 3
+    name: "Build the Application"
+    description: "Restore dependencies and build the Games application"
+    commands:
+      - description: "Restore NuGet packages"
+        command: "dotnet restore Games.sln"
+        timeout: "60s"
+        notes: "First restore may take longer due to package downloads"
+      - description: "Build the solution"
+        command: "dotnet build Games.sln"
+        timeout: "30s"
+        expected_duration: "4-6s on subsequent builds"
+      - description: "Verify build success"
+        command: "echo $?"
+        expected_output: "0"
+    troubleshooting:
+      - issue: "SDK not found"
+        solution: "Ensure .NET 9.0 SDK is installed and PATH is exported"
+      - issue: "Restore failures"
+        solution: "Check internet connection, clear NuGet cache: dotnet nuget locals all --clear"
+
+  # Step 4: Run Application
+  - step: 4
+    name: "Run the Games Application"
+    description: "Start the Blazor WebAssembly development server"
+    commands:
+      - description: "Start the application"
+        command: "dotnet run --project Games"
+        timeout: "60s"
+        background: true
+        notes: "Startup takes 8-12 seconds, look for 'Now listening on' message"
+      - description: "Wait for application to start"
+        command: "timeout 60 bash -c 'until curl -f http://localhost:5080; do sleep 2; done'"
+      - description: "Open in browser"
+        urls:
+          - "http://localhost:5080"
+          - "https://localhost:7042"
+    expected_behavior:
+      - "Application should display the Games homepage"
+      - "Navigation should work between '/' (Tamagotchi) and '/tanks' (Tank Battle)"
+
+  # Step 5: E2E Testing Setup
+  - step: 5
+    name: "Setup End-to-End Testing"
+    description: "Install Playwright browsers and setup E2E testing environment"
+    commands:
+      - description: "Build E2E test project"
+        command: "dotnet build Games.E2ETests"
+      - description: "Install Playwright browsers"
+        command: "cd Games.E2ETests && pwsh bin/Debug/net9.0/playwright.ps1 install --with-deps"
+        timeout: "300s"
+        notes: "Browser installation may take 3-5 minutes"
+        retry_logic: true
+      - description: "Run smoke tests (no browser required)"
+        command: 'dotnet test Games.E2ETests --filter "TestCategory!=RequiresBrowser" --logger "console;verbosity=detailed"'
+      - description: "Run full E2E test suite"
+        command: 'dotnet test Games.E2ETests --logger "console;verbosity=detailed"'
+        prerequisites: ["Application must be running on localhost:5080"]
+    troubleshooting:
+      - issue: "Playwright browser installation fails"
+        solutions:
+          - "Check network connectivity"
+          - "Try alternative: dotnet tool install --global Microsoft.Playwright.CLI"
+          - "Use smoke tests only for basic validation"
+
+  # Step 6: Development Workflow
+  - step: 6
+    name: "Development Workflow Setup"
+    description: "Configure development environment for efficient coding"
+    commands:
+      - description: "Start development with hot reload"
+        command: "dotnet watch --project Games"
+        notes: "Enables automatic rebuild on file changes"
+      - description: "Format code (required before commits)"
+        command: "dotnet format"
+        timeout: "30s"
+      - description: "Verify code formatting"
+        command: "dotnet format --verify-no-changes"
+        notes: "Must pass before any commit"
+    best_practices:
+      - "Always run 'dotnet format' before committing changes"
+      - "Test both games manually after making changes"
+      - "Use 'dotnet watch' for rapid development iteration"
+      - "Verify changes work on both desktop and mobile viewports"
+
+# Game-specific validation scenarios
+validation_scenarios:
+  
+  tamagotchi_game:
+    route: "/"
+    description: "Virtual Pet game validation"
+    test_steps:
+      - action: "Navigate to root page"
+        expected: "Display pet with stats (Hunger, Happiness, Energy, Mood)"
+      - action: "Click 'Feed (A)' button"
+        expected: "Hunger decreases, happiness may increase, pet face changes"
+      - action: "Click 'Play (B)' button"
+        expected: "Happiness increases, energy may decrease"
+      - action: "Click 'Rest (X)' button"
+        expected: "Energy increases"
+      - action: "Verify gamepad connection status"
+        expected: "Connection status is displayed"
+      - action: "Test responsive design"
+        expected: "Layout adapts to mobile viewport"
+      - action: "Test keyboard navigation"
+        expected: "Tab/Enter/Space navigation works"
+  
+  tank_battle_game:
+    route: "/tanks"
+    description: "Real-time tank battle game validation"
+    test_steps:
+      - action: "Navigate to /tanks"
+        expected: "Display battlefield with player tank (red) and enemy tank (green)"
+      - action: "Verify HUD display"
+        expected: "Shows 'Player HP: 100 | Enemy HP: 100'"
+      - action: "Click 'FIRE' button"
+        expected: "Triggers combat, HP values may change"
+      - action: "Click 'Restart' button"
+        expected: "Resets both HP to 100 and respawns tanks"
+      - action: "Test 'AUTO OFF'/'AUTO ON' toggle"
+        expected: "Toggle functionality works"
+      - action: "Verify virtual joysticks"
+        expected: "Virtual joysticks visible on mobile"
+      - action: "Test fullscreen button"
+        expected: "Layout adapts to fullscreen mode"
+      - action: "Verify audio"
+        expected: "Game sounds play when firing"
+
+# Performance and compatibility requirements
+performance_requirements:
+  target_framerate: "60fps"
+  startup_time: "8-12 seconds"
+  build_time: "2-4 seconds (incremental), 4-6 seconds (clean)"
+  memory_usage: "No memory leaks during extended play"
+  
+browser_compatibility:
+  desktop:
+    - "Chrome 88+"
+    - "Firefox 84+"
+    - "Safari 14+"
+    - "Edge 88+"
+  mobile:
+    - "iOS Safari 14+"
+    - "Chrome Mobile 88+"
+    - "Samsung Internet 13+"
+  requirements:
+    - "WebAssembly support"
+    - "ES2018+ features"
+    - "Gamepad API (optional)"
+    - "Web Audio API"
+    - "Service Worker"
+
+# Common issues and solutions
+troubleshooting_guide:
+  build_issues:
+    - issue: "SDK not found"
+      solution: "Ensure .NET 9.0 SDK is installed and PATH is exported"
+    - issue: "Project file not found"
+      solution: "Run commands from repository root directory"
+    - issue: "Restore failures"
+      solution: "Check internet connection, clear NuGet cache"
+  
+  runtime_issues:
+    - issue: "Blank page"
+      solution: "Check browser console for JavaScript errors, verify all assets loaded"
+    - issue: "Gamepad not working"
+      solution: "Ensure browser supports Gamepad API, check gamepad connection"
+    - issue: "Canvas not rendering"
+      solution: "Verify canvas element exists before JavaScript calls"
+    - issue: "Audio not playing"
+      solution: "Check browser autoplay policies, verify Web Audio API support"
+  
+  development_issues:
+    - issue: "Hot reload not working"
+      solution: "Restart 'dotnet watch', check file watchers aren't exhausted"
+    - issue: "CSS changes not visible"
+      solution: "Clear browser cache, check CSS isolation file naming"
+    - issue: "JavaScript interop failures"
+      solution: "Verify method names match between C# and JS, check browser console"
+
+# Additional resources and documentation
+resources:
+  documentation:
+    - name: "Repository README"
+      path: "README.md"
+      description: "Comprehensive project documentation"
+    - name: "Copilot Instructions"
+      path: ".github/copilot-instructions.md"
+      description: "Detailed development guidelines"
+    - name: "E2E Testing Guide"
+      path: "Games.E2ETests/README.md"
+      description: "End-to-end testing documentation"
+  
+  external_links:
+    - name: ".NET 9.0 Documentation"
+      url: "https://learn.microsoft.com/en-us/dotnet/core/whats-new/dotnet-9"
+    - name: "Blazor WebAssembly Guide"
+      url: "https://learn.microsoft.com/en-us/aspnet/core/blazor/webassembly"
+    - name: "Playwright for .NET"
+      url: "https://playwright.dev/dotnet/"
+    - name: "Azure Static Web Apps"
+      url: "https://docs.microsoft.com/en-us/azure/static-web-apps/"
+
+# Quick reference commands
+quick_reference:
+  essential_commands:
+    - description: "Clean build"
+      command: "dotnet clean Games.sln && dotnet build Games.sln"
+      duration: "4-6 seconds"
+    - description: "Run application"
+      command: "dotnet run --project Games"
+      duration: "8-12 seconds startup"
+    - description: "Run with hot reload"
+      command: "dotnet watch --project Games"
+    - description: "Format code"
+      command: "dotnet format"
+    - description: "Verify formatting"
+      command: "dotnet format --verify-no-changes"
+    - description: "Run smoke tests"
+      command: 'dotnet test --filter "TestCategory!=RequiresBrowser"'
+    - description: "Run all E2E tests"
+      command: "dotnet test Games.E2ETests"
+  
+  urls:
+    - description: "Tamagotchi Game"
+      url: "http://localhost:5080/"
+    - description: "Tank Battle Game"
+      url: "http://localhost:5080/tanks"
+    - description: "HTTPS Version"
+      url: "https://localhost:7042"
+
+# Project metadata
+metadata:
+  repository_url: "https://github.com/gergroen/Games"
+  license: "MIT"
+  framework: "Blazor WebAssembly"
+  target_framework: "net9.0"
+  deployment: "Azure Static Web Apps"
+  ci_cd: "GitHub Actions"
+  last_updated: "2025-08-27"
