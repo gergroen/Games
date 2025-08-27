@@ -96,23 +96,23 @@ window.tankGame = (function(){
     ctx.strokeStyle='#333';
     for(let x=0;x<canvas.width;x+=40){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvas.height); ctx.stroke(); }
     for(let y=0;y<canvas.height;y+=40){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvas.width,y); ctx.stroke(); }
-    drawTank(player,'#4cff4c');
+    drawTank(player,'#4cff4c','#90ff90');
     if(Array.isArray(enemy)){
-      enemy.forEach(e=>{ if(e.hp>0 || e.Hp>0) drawTank(e,'#ff4c4c'); });
+      enemy.forEach(e=>{ if(e.hp>0 || e.Hp>0) drawTank(e,'#ff4c4c','#ff9090'); });
     } else {
-      drawTank(enemy,'#ff4c4c');
+      drawTank(enemy,'#ff4c4c','#ff9090');
     }
     ctx.fillStyle='#ffdc66';
     projectiles.forEach(p=>{ ctx.beginPath(); ctx.arc(p.x,p.y,4,0,Math.PI*2); ctx.fill(); });
     drawExplosions();
   }
-  function drawTank(t,color){
+  function drawTank(t,color,barrelColor){
     ctx.save();
     ctx.translate(t.x,t.y);
     ctx.rotate(t.angle);
     ctx.fillStyle=color;
     ctx.fillRect(-16,-12,32,24); // body
-    ctx.fillStyle='#222';
+    ctx.fillStyle=barrelColor||'#222';
     ctx.fillRect(0,-4,22,8); // barrel
     ctx.restore();
   }
