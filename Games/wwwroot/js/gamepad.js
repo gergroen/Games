@@ -109,11 +109,22 @@ window.tankGame = (function(){
   function drawTank(t,color,barrelColor){
     ctx.save();
     ctx.translate(t.x,t.y);
+    
+    // Draw body with its angle
+    ctx.save();
     ctx.rotate(t.angle);
     ctx.fillStyle=color;
     ctx.fillRect(-16,-12,32,24); // body
+    ctx.restore();
+    
+    // Draw barrel with its angle (use barrelAngle if available, otherwise fall back to tank angle)
+    ctx.save();
+    const barrelAngle = t.barrelAngle !== undefined ? t.barrelAngle : t.angle;
+    ctx.rotate(barrelAngle);
     ctx.fillStyle=barrelColor||'#222';
     ctx.fillRect(0,-4,22,8); // barrel
+    ctx.restore();
+    
     ctx.restore();
   }
   function drawExplosions(){

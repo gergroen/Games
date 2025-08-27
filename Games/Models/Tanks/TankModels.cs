@@ -10,6 +10,7 @@ public class Tank
     public double X { get; set; } = 100;
     public double Y { get; set; } = 200;
     public double Angle { get; set; } = 0;
+    public double BarrelAngle { get; set; } = 0;
     public double Speed { get; set; } = 110;
     public int Hp { get; set; } = 100;
     public bool IsPlayer { get; set; }
