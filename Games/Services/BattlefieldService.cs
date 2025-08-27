@@ -13,8 +13,8 @@ public class BattlefieldService
     public int GameHeight { get; private set; } = 400;
 
     // World size (larger than viewport)
-    public int WorldWidth { get; private set; } = 1600;
-    public int WorldHeight { get; private set; } = 1000;
+    public int WorldWidth { get; private set; } = 5000;
+    public int WorldHeight { get; private set; } = 5000;
 
     // Camera position (top-left corner of viewport in world coordinates)
     public double CameraX { get; private set; } = 0;
