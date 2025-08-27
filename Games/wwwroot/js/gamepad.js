@@ -31,6 +31,8 @@ window.addEventListener('gamepaddisconnected', e => console.log('Gamepad disconn
 window.tankGame = (function(){
   let ctx, canvas; let over=false; let _ref=null; let _frameFn=null;
   const explosions=[]; // {x,y,start,duration}
+  const tracks=[]; // {x,y,angle,start,duration}
+  const lastTankPositions=new Map(); // track previous positions to detect movement
   let audioCtx=null; let _keyHandlerAdded=false; // added flag
   function ensureAudio(){
     if(!audioCtx){
@@ -66,6 +68,60 @@ window.tankGame = (function(){
     explosions.push({x,y,start:performance.now(),duration:650});
     ensureAudio(); playBoom();
   }
+  function addTrackPoint(tankId, x, y, angle){
+    const now = performance.now();
+    tracks.push({x, y, angle, start: now, duration: 3500}); // 3.5 second fade
+    
+    // Limit track history to prevent memory issues
+    if(tracks.length > 500) {
+      tracks.splice(0, 50); // Remove oldest 50 tracks
+    }
+  }
+  function updateTracks(allTanks){
+    // Check each tank for movement and add track points
+    allTanks.forEach(tank => {
+      if(!tank || (tank.hp !== undefined && tank.hp <= 0) || (tank.Hp !== undefined && tank.Hp <= 0)) return;
+      
+      const tankId = tank.id || tank.Id || 0;
+      const currentX = tank.x || tank.X;
+      const currentY = tank.y || tank.Y;
+      const currentAngle = tank.angle || tank.Angle;
+      
+      const lastPos = lastTankPositions.get(tankId);
+      
+      if(lastPos) {
+        const dx = currentX - lastPos.x;
+        const dy = currentY - lastPos.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        // Add track point if tank moved more than 5 pixels
+        if(distance > 5) {
+          // Calculate movement direction angle
+          const movementAngle = Math.atan2(dy, dx);
+          
+          // Place track points behind the movement direction
+          // Add multiple track points along the movement path for better trail effect
+          const numTrackPoints = Math.max(1, Math.floor(distance / 6)); // One track every 6 pixels for better coverage
+          
+          for(let i = 0; i < numTrackPoints; i++) {
+            const t = i / numTrackPoints; // Progress along the movement path (0 to 1)
+            const trackX = lastPos.x + dx * t;
+            const trackY = lastPos.y + dy * t;
+            
+            // Offset the track point backwards from the movement direction
+            const offsetDistance = 20; // Slightly more distance behind the tank center
+            const offsetX = trackX - Math.cos(movementAngle) * offsetDistance;
+            const offsetY = trackY - Math.sin(movementAngle) * offsetDistance;
+            
+            addTrackPoint(tankId, offsetX, offsetY, movementAngle);
+          }
+        }
+      }
+      
+      // Update last position
+      lastTankPositions.set(tankId, {x: currentX, y: currentY, angle: currentAngle});
+    });
+  }
   function init(dotNetRef){
     over=false;
     _ref = dotNetRef;
@@ -96,6 +152,21 @@ window.tankGame = (function(){
     ctx.strokeStyle='#333';
     for(let x=0;x<canvas.width;x+=40){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvas.height); ctx.stroke(); }
     for(let y=0;y<canvas.height;y+=40){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvas.width,y); ctx.stroke(); }
+    
+    // Collect all tanks for track updates
+    const allTanks = [player];
+    if(Array.isArray(enemy)){
+      allTanks.push(...enemy.filter(e => (e.hp > 0 || e.Hp > 0)));
+    } else if(enemy && (enemy.hp > 0 || enemy.Hp > 0)) {
+      allTanks.push(enemy);
+    }
+    
+    // Update tracks based on tank movement
+    updateTracks(allTanks);
+    
+    // Draw tracks first (under everything else)
+    drawTracks();
+    
     drawTank(player,'#4cff4c','#90ff90');
     if(Array.isArray(enemy)){
       enemy.forEach(e=>{ if(e.hp>0 || e.Hp>0) drawTank(e,'#ff4c4c','#ff9090'); });
@@ -146,6 +217,50 @@ window.tankGame = (function(){
       ctx.fillStyle=`rgba(255,90,0,${alpha*0.6})`;
       ctx.arc(e.x,e.y,r*0.45,0,Math.PI*2);
       ctx.fill();
+    }
+  }
+  function drawTracks(){
+    const now=performance.now();
+    for(let i=tracks.length-1;i>=0;i--){
+      const track=tracks[i];
+      const t=(now-track.start)/track.duration;
+      if(t>=1){ tracks.splice(i,1); continue; }
+      
+      const alpha = (1-t) * 0.8; // Higher opacity for better visibility
+      
+      ctx.save();
+      ctx.translate(track.x, track.y);
+      ctx.rotate(track.angle);
+      
+      // Draw tank track marks - two parallel lines representing treads
+      // Oriented parallel to movement direction to show where tank treads went
+      ctx.strokeStyle=`rgba(101,67,33,${alpha})`; // Darker brown/dirt color for better visibility
+      ctx.lineWidth=3; // Good thickness for visibility
+      ctx.lineCap='round';
+      
+      // Left tread mark (parallel to movement direction)
+      ctx.beginPath();
+      ctx.moveTo(-12, -6);
+      ctx.lineTo(12, -6);
+      ctx.stroke();
+      
+      // Right tread mark (parallel to movement direction)
+      ctx.beginPath();
+      ctx.moveTo(-12, 6);
+      ctx.lineTo(12, 6);
+      ctx.stroke();
+      
+      // Add small cross-hatches for texture (perpendicular to treads)
+      ctx.lineWidth=2;
+      ctx.strokeStyle=`rgba(139,69,19,${alpha * 0.9})`; // Saddle brown color for texture
+      for(let offset = -8; offset <= 8; offset += 4) {
+        ctx.beginPath();
+        ctx.moveTo(offset, -6);
+        ctx.lineTo(offset, 6);
+        ctx.stroke();
+      }
+      
+      ctx.restore();
     }
   }
   let musicNodes=[];
