@@ -96,7 +96,7 @@ window.tankGame = (function(){
     ctx.strokeStyle='#333';
     for(let x=0;x<canvas.width;x+=40){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvas.height); ctx.stroke(); }
     for(let y=0;y<canvas.height;y+=40){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvas.width,y); ctx.stroke(); }
-    drawTank(player,'#4cff4c','#90ff90');
+    drawTank(player,'#228B22','#90ff90');
     if(Array.isArray(enemy)){
       enemy.forEach(e=>{ if(e.hp>0 || e.Hp>0) drawTank(e,'#ff4c4c','#ff9090'); });
     } else {
@@ -109,6 +109,37 @@ window.tankGame = (function(){
   function drawTank(t,color,barrelColor){
     ctx.save();
     ctx.translate(t.x,t.y);
+    
+    // Draw HP bar above tank
+    if(t.hp !== undefined || t.Hp !== undefined) {
+      const hp = t.hp || t.Hp || 100;
+      const maxHp = 100;
+      const barWidth = 40;
+      const barHeight = 6;
+      const barY = -25; // Position above tank
+      
+      // Background bar (red/dark)
+      ctx.fillStyle = '#441111';
+      ctx.fillRect(-barWidth/2, barY, barWidth, barHeight);
+      
+      // HP bar (green to red based on health)
+      const hpRatio = hp / maxHp;
+      let hpColor;
+      if(hpRatio > 0.6) {
+        hpColor = '#22AA22'; // Green
+      } else if(hpRatio > 0.3) {
+        hpColor = '#AAAA22'; // Yellow
+      } else {
+        hpColor = '#AA2222'; // Red
+      }
+      ctx.fillStyle = hpColor;
+      ctx.fillRect(-barWidth/2, barY, barWidth * hpRatio, barHeight);
+      
+      // Border around HP bar
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(-barWidth/2, barY, barWidth, barHeight);
+    }
     
     // Draw body with its angle
     ctx.save();
