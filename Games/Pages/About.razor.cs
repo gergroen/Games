@@ -22,13 +22,13 @@ public class VersionInfo
     public VersionInfo()
     {
         var assembly = Assembly.GetExecutingAssembly();
-        
+
         // Get version from assembly
         Version = assembly.GetName().Version?.ToString() ?? "1.0.0.0";
-        
+
         // Get framework version
         Framework = Environment.Version.ToString();
-        
+
         // Get build time from assembly (if available) or use current time as fallback
         BuildTime = GetBuildTime(assembly);
     }
@@ -47,7 +47,7 @@ public class VersionInfo
                     return buildTime.ToString("yyyy-MM-dd HH:mm:ss UTC");
                 }
             }
-            
+
             // Fallback: use assembly creation time
             var location = assembly.Location;
             if (!string.IsNullOrEmpty(location) && File.Exists(location))
@@ -60,7 +60,7 @@ public class VersionInfo
         {
             // If anything fails, return current time
         }
-        
+
         return DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss UTC");
     }
 }

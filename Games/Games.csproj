@@ -18,4 +18,31 @@
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="9.0.0" PrivateAssets="all" />
   </ItemGroup>
 
+  <!-- Custom target to inject build time into service worker -->
+  <Target Name="UpdateServiceWorkerVersion" BeforeTargets="Build">
+    <PropertyGroup>
+      <BuildTimestamp>$([System.DateTime]::UtcNow.ToString('yyyyMMdd-HHmmss'))</BuildTimestamp>
+      <ServiceWorkerPath>$(MSBuildProjectDirectory)/wwwroot/service-worker.js</ServiceWorkerPath>
+      <ServiceWorkerTemplatePath>$(MSBuildProjectDirectory)/wwwroot/service-worker-template.js</ServiceWorkerTemplatePath>
+    </PropertyGroup>
+    
+    <Message Text="Updating service worker with build timestamp: $(BuildTimestamp)" Importance="high" />
+    
+    <!-- Read template if it exists, otherwise use current service worker -->
+    <ReadLinesFromFile File="$(ServiceWorkerTemplatePath)" Condition="Exists('$(ServiceWorkerTemplatePath)')">
+      <Output TaskParameter="Lines" ItemName="ServiceWorkerLines" />
+    </ReadLinesFromFile>
+    <ReadLinesFromFile File="$(ServiceWorkerPath)" Condition="!Exists('$(ServiceWorkerTemplatePath)')">
+      <Output TaskParameter="Lines" ItemName="ServiceWorkerLines" />
+    </ReadLinesFromFile>
+    
+    <!-- Replace the build time placeholder -->
+    <ItemGroup>
+      <UpdatedServiceWorkerLines Include="@(ServiceWorkerLines->Replace('${BUILD_TIME}', '$(BuildTimestamp)'))" />
+    </ItemGroup>
+    
+    <!-- Write the updated service worker -->
+    <WriteLinesToFile File="$(ServiceWorkerPath)" Lines="@(UpdatedServiceWorkerLines)" Overwrite="true" />
+  </Target>
+
 </Project>
