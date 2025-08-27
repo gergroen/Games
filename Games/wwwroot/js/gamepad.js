@@ -31,6 +31,8 @@ window.addEventListener('gamepaddisconnected', e => console.log('Gamepad disconn
 window.tankGame = (function(){
   let ctx, canvas; let over=false; let _ref=null; let _frameFn=null;
   const explosions=[]; // {x,y,start,duration}
+  const tracks=[]; // {x,y,angle,start,duration}
+  const lastTankPositions=new Map(); // track previous positions to detect movement
   let audioCtx=null; let _keyHandlerAdded=false; // added flag
   function ensureAudio(){
     if(!audioCtx){
@@ -66,6 +68,42 @@ window.tankGame = (function(){
     explosions.push({x,y,start:performance.now(),duration:650});
     ensureAudio(); playBoom();
   }
+  function addTrackPoint(tankId, x, y, angle){
+    const now = performance.now();
+    tracks.push({x, y, angle, start: now, duration: 3500}); // 3.5 second fade
+    
+    // Limit track history to prevent memory issues
+    if(tracks.length > 500) {
+      tracks.splice(0, 50); // Remove oldest 50 tracks
+    }
+  }
+  function updateTracks(allTanks){
+    // Check each tank for movement and add track points
+    allTanks.forEach(tank => {
+      if(!tank || (tank.hp !== undefined && tank.hp <= 0) || (tank.Hp !== undefined && tank.Hp <= 0)) return;
+      
+      const tankId = tank.id || tank.Id || 0;
+      const currentX = tank.x || tank.X;
+      const currentY = tank.y || tank.Y;
+      const currentAngle = tank.angle || tank.Angle;
+      
+      const lastPos = lastTankPositions.get(tankId);
+      
+      if(lastPos) {
+        const dx = currentX - lastPos.x;
+        const dy = currentY - lastPos.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        // Add track point if tank moved more than 8 pixels
+        if(distance > 8) {
+          addTrackPoint(tankId, lastPos.x, lastPos.y, lastPos.angle);
+        }
+      }
+      
+      // Update last position
+      lastTankPositions.set(tankId, {x: currentX, y: currentY, angle: currentAngle});
+    });
+  }
   function init(dotNetRef){
     over=false;
     _ref = dotNetRef;
@@ -96,6 +134,21 @@ window.tankGame = (function(){
     ctx.strokeStyle='#333';
     for(let x=0;x<canvas.width;x+=40){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvas.height); ctx.stroke(); }
     for(let y=0;y<canvas.height;y+=40){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvas.width,y); ctx.stroke(); }
+    
+    // Collect all tanks for track updates
+    const allTanks = [player];
+    if(Array.isArray(enemy)){
+      allTanks.push(...enemy.filter(e => (e.hp > 0 || e.Hp > 0)));
+    } else if(enemy && (enemy.hp > 0 || enemy.Hp > 0)) {
+      allTanks.push(enemy);
+    }
+    
+    // Update tracks based on tank movement
+    updateTracks(allTanks);
+    
+    // Draw tracks first (under everything else)
+    drawTracks();
+    
     drawTank(player,'#4cff4c','#90ff90');
     if(Array.isArray(enemy)){
       enemy.forEach(e=>{ if(e.hp>0 || e.Hp>0) drawTank(e,'#ff4c4c','#ff9090'); });
@@ -146,6 +199,48 @@ window.tankGame = (function(){
       ctx.fillStyle=`rgba(255,90,0,${alpha*0.6})`;
       ctx.arc(e.x,e.y,r*0.45,0,Math.PI*2);
       ctx.fill();
+    }
+  }
+  function drawTracks(){
+    const now=performance.now();
+    for(let i=tracks.length-1;i>=0;i--){
+      const track=tracks[i];
+      const t=(now-track.start)/track.duration;
+      if(t>=1){ tracks.splice(i,1); continue; }
+      
+      const alpha = (1-t) * 0.4; // Start with lower opacity than explosions
+      
+      ctx.save();
+      ctx.translate(track.x, track.y);
+      ctx.rotate(track.angle);
+      
+      // Draw tank track marks - two parallel lines representing treads
+      ctx.strokeStyle=`rgba(100,80,60,${alpha})`; // Brown/dirt color
+      ctx.lineWidth=3;
+      ctx.lineCap='round';
+      
+      // Left tread mark
+      ctx.beginPath();
+      ctx.moveTo(-12, -8);
+      ctx.lineTo(-12, 8);
+      ctx.stroke();
+      
+      // Right tread mark  
+      ctx.beginPath();
+      ctx.moveTo(12, -8);
+      ctx.lineTo(12, 8);
+      ctx.stroke();
+      
+      // Add small cross-hatches for texture
+      ctx.lineWidth=1;
+      for(let offset = -6; offset <= 6; offset += 4) {
+        ctx.beginPath();
+        ctx.moveTo(-12, offset);
+        ctx.lineTo(12, offset);
+        ctx.stroke();
+      }
+      
+      ctx.restore();
     }
   }
   let musicNodes=[];
