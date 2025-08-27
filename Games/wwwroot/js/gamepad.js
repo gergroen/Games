@@ -172,7 +172,8 @@ window.tankGame = (function(){
     osc.start(now); osc.stop(now+0.22);
   }
   function vibrate(){
-    // Trigger gamepad vibration when player is hit
+    // Try gamepad vibration first
+    let gamepadVibrated = false;
     const pads = navigator.getGamepads ? navigator.getGamepads() : [];
     for(let i = 0; i < pads.length; i++){
       const gp = pads[i];
@@ -184,6 +185,17 @@ window.tankGame = (function(){
           strongMagnitude: 0.8,
           weakMagnitude: 0.6
         }).catch(()=>{}); // Ignore vibration errors
+        gamepadVibrated = true;
+      }
+    }
+    
+    // Fallback to mobile device vibration if no gamepad vibration occurred
+    if(!gamepadVibrated && navigator.vibrate){
+      try {
+        // Mobile vibration pattern: strong pulse matching gamepad duration
+        navigator.vibrate(400);
+      } catch(e) {
+        // Ignore mobile vibration errors (some browsers/devices don't support it)
       }
     }
   }
