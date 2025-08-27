@@ -67,7 +67,8 @@ public class BattlefieldService
         });
 
         // Center camera on player initially
-        UpdateCamera();
+        CameraX = Math.Clamp(Player.X - GameWidth / 2.0, 0, WorldWidth - GameWidth);
+        CameraY = Math.Clamp(Player.Y - GameHeight / 2.0, 0, WorldHeight - GameHeight);
     }
 
     public void Update(double dt, Action<Projectile>? onExplosion, Action? onPlayerHit = null)
@@ -101,47 +102,47 @@ public class BattlefieldService
 
     private void UpdateCamera()
     {
-        // Camera follows player with some buffer from viewport edges
+        // Camera follows player with buffer from viewport edges
         double bufferX = GameWidth * 0.25; // Start moving camera when player is 25% from edge
         double bufferY = GameHeight * 0.25;
 
-        // Calculate desired camera position to keep player in comfortable zone
-        double desiredCameraX = Player.X - GameWidth / 2.0;
-        double desiredCameraY = Player.Y - GameHeight / 2.0;
+        // Get player position relative to current camera
+        double playerScreenX = Player.X - CameraX;
+        double playerScreenY = Player.Y - CameraY;
 
-        // Only move camera if player is getting close to viewport edge
-        double playerViewportX = Player.X - CameraX;
-        double playerViewportY = Player.Y - CameraY;
+        // Calculate camera adjustments needed
+        double cameraAdjustX = 0;
+        double cameraAdjustY = 0;
 
-        if (playerViewportX < bufferX)
+        // Check if player is too close to left edge
+        if (playerScreenX < bufferX)
         {
-            desiredCameraX = Player.X - bufferX;
+            cameraAdjustX = playerScreenX - bufferX; // Negative value, moves camera left
         }
-        else if (playerViewportX > GameWidth - bufferX)
+        // Check if player is too close to right edge
+        else if (playerScreenX > GameWidth - bufferX)
         {
-            desiredCameraX = Player.X - (GameWidth - bufferX);
-        }
-        else
-        {
-            desiredCameraX = CameraX; // Don't move camera if player is in comfortable zone
+            cameraAdjustX = playerScreenX - (GameWidth - bufferX); // Positive value, moves camera right
         }
 
-        if (playerViewportY < bufferY)
+        // Check if player is too close to top edge
+        if (playerScreenY < bufferY)
         {
-            desiredCameraY = Player.Y - bufferY;
+            cameraAdjustY = playerScreenY - bufferY; // Negative value, moves camera up
         }
-        else if (playerViewportY > GameHeight - bufferY)
+        // Check if player is too close to bottom edge
+        else if (playerScreenY > GameHeight - bufferY)
         {
-            desiredCameraY = Player.Y - (GameHeight - bufferY);
+            cameraAdjustY = playerScreenY - (GameHeight - bufferY); // Positive value, moves camera down
         }
-        else
-        {
-            desiredCameraY = CameraY; // Don't move camera if player is in comfortable zone
-        }
+
+        // Apply camera adjustments
+        double newCameraX = CameraX + cameraAdjustX;
+        double newCameraY = CameraY + cameraAdjustY;
 
         // Clamp camera to world bounds
-        CameraX = Math.Clamp(desiredCameraX, 0, WorldWidth - GameWidth);
-        CameraY = Math.Clamp(desiredCameraY, 0, WorldHeight - GameHeight);
+        CameraX = Math.Clamp(newCameraX, 0, WorldWidth - GameWidth);
+        CameraY = Math.Clamp(newCameraY, 0, WorldHeight - GameHeight);
     }
 
     public void TryFirePlayer(Action? onFire)
