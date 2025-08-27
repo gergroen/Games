@@ -94,8 +94,8 @@ window.tankGame = (function(){
         const dy = currentY - lastPos.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
         
-        // Add track point if tank moved more than 8 pixels
-        if(distance > 8) {
+        // Add track point if tank moved more than 5 pixels
+        if(distance > 5) {
           addTrackPoint(tankId, lastPos.x, lastPos.y, lastPos.angle);
         }
       }
@@ -208,15 +208,15 @@ window.tankGame = (function(){
       const t=(now-track.start)/track.duration;
       if(t>=1){ tracks.splice(i,1); continue; }
       
-      const alpha = (1-t) * 0.4; // Start with lower opacity than explosions
+      const alpha = (1-t) * 0.7; // Increased opacity for better visibility
       
       ctx.save();
       ctx.translate(track.x, track.y);
       ctx.rotate(track.angle);
       
       // Draw tank track marks - two parallel lines representing treads
-      ctx.strokeStyle=`rgba(100,80,60,${alpha})`; // Brown/dirt color
-      ctx.lineWidth=3;
+      ctx.strokeStyle=`rgba(120,100,80,${alpha})`; // Darker brown/dirt color for better visibility
+      ctx.lineWidth=4; // Slightly thicker lines
       ctx.lineCap='round';
       
       // Left tread mark
@@ -232,7 +232,8 @@ window.tankGame = (function(){
       ctx.stroke();
       
       // Add small cross-hatches for texture
-      ctx.lineWidth=1;
+      ctx.lineWidth=2; // Thicker texture lines
+      ctx.strokeStyle=`rgba(80,60,40,${alpha * 0.8})`; // Slightly different color for texture
       for(let offset = -6; offset <= 6; offset += 4) {
         ctx.beginPath();
         ctx.moveTo(-12, offset);
