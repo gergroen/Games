@@ -71,7 +71,7 @@ public class BattlefieldService
 
     public void MovePlayer(double moveX, double moveY, double dt)
     {
-        Player.X += moveX * Player.Speed * dt; Player.Y += moveY * Player.Speed * dt; Clamp(Player);
+        Player.X += moveX * Player.EffectiveSpeed * dt; Player.Y += moveY * Player.EffectiveSpeed * dt; Clamp(Player);
 
         // Set body angle based on movement direction
         if (Math.Abs(moveX) > 0 || Math.Abs(moveY) > 0)
@@ -124,7 +124,7 @@ public class BattlefieldService
             ally.Angle = Math.Atan2(moveVY, moveVX);
         }
 
-        ally.X += moveVX * ally.Speed * dt; ally.Y += moveVY * ally.Speed * dt; Clamp(ally);
+        ally.X += moveVX * ally.EffectiveSpeed * dt; ally.Y += moveVY * ally.EffectiveSpeed * dt; Clamp(ally);
         ally.NextFireTimer -= dt; if (ally.NextFireTimer <= 0) { Fire(ally); ally.NextFireTimer = 0.7 + _rand.NextDouble() * 0.6; }
     }
 
@@ -179,7 +179,7 @@ public class BattlefieldService
             enemy.Angle = Math.Atan2(moveVY, moveVX);
         }
 
-        enemy.X += moveVX * enemy.Speed * dt; enemy.Y += moveVY * enemy.Speed * dt; Clamp(enemy);
+        enemy.X += moveVX * enemy.EffectiveSpeed * dt; enemy.Y += moveVY * enemy.EffectiveSpeed * dt; Clamp(enemy);
         enemy.NextFireTimer -= dt; if (enemy.NextFireTimer <= 0) { Fire(enemy); enemy.NextFireTimer = enemy.Behavior == EnemyBehavior.Sniper ? 1.3 + _rand.NextDouble() * 1.0 : 0.8 + _rand.NextDouble() * 0.7; }
     }
 

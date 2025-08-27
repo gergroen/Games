@@ -14,6 +14,11 @@ public class Tank
     public double Speed { get; set; } = 110;
     public int Hp { get; set; } = 100;
     public bool IsPlayer { get; set; }
+
+    /// <summary>
+    /// Gets the effective speed based on current HP. Tanks move slower as they take damage.
+    /// </summary>
+    public double EffectiveSpeed => Speed * (Hp / 100.0);
 }
 
 public class PlayerTank : Tank
