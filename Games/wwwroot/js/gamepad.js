@@ -96,7 +96,25 @@ window.tankGame = (function(){
         
         // Add track point if tank moved more than 5 pixels
         if(distance > 5) {
-          addTrackPoint(tankId, lastPos.x, lastPos.y, lastPos.angle);
+          // Calculate movement direction angle
+          const movementAngle = Math.atan2(dy, dx);
+          
+          // Place track points behind the movement direction
+          // Add multiple track points along the movement path for better trail effect
+          const numTrackPoints = Math.max(1, Math.floor(distance / 8)); // One track every 8 pixels
+          
+          for(let i = 0; i < numTrackPoints; i++) {
+            const t = i / numTrackPoints; // Progress along the movement path (0 to 1)
+            const trackX = lastPos.x + dx * t;
+            const trackY = lastPos.y + dy * t;
+            
+            // Offset the track point backwards from the movement direction
+            const offsetDistance = 16; // Distance behind the tank center
+            const offsetX = trackX - Math.cos(movementAngle) * offsetDistance;
+            const offsetY = trackY - Math.sin(movementAngle) * offsetDistance;
+            
+            addTrackPoint(tankId, offsetX, offsetY, movementAngle);
+          }
         }
       }
       
@@ -215,29 +233,30 @@ window.tankGame = (function(){
       ctx.rotate(track.angle);
       
       // Draw tank track marks - two parallel lines representing treads
+      // Oriented perpendicular to movement direction for realistic tire tracks
       ctx.strokeStyle=`rgba(120,100,80,${alpha})`; // Darker brown/dirt color for better visibility
       ctx.lineWidth=4; // Slightly thicker lines
       ctx.lineCap='round';
       
-      // Left tread mark
+      // Left tread mark (perpendicular to movement direction)
       ctx.beginPath();
-      ctx.moveTo(-12, -8);
-      ctx.lineTo(-12, 8);
+      ctx.moveTo(-8, -12);
+      ctx.lineTo(8, -12);
       ctx.stroke();
       
-      // Right tread mark  
+      // Right tread mark (perpendicular to movement direction)
       ctx.beginPath();
-      ctx.moveTo(12, -8);
-      ctx.lineTo(12, 8);
+      ctx.moveTo(-8, 12);
+      ctx.lineTo(8, 12);
       ctx.stroke();
       
-      // Add small cross-hatches for texture
+      // Add small cross-hatches for texture (also perpendicular)
       ctx.lineWidth=2; // Thicker texture lines
       ctx.strokeStyle=`rgba(80,60,40,${alpha * 0.8})`; // Slightly different color for texture
       for(let offset = -6; offset <= 6; offset += 4) {
         ctx.beginPath();
-        ctx.moveTo(-12, offset);
-        ctx.lineTo(12, offset);
+        ctx.moveTo(offset, -12);
+        ctx.lineTo(offset, 12);
         ctx.stroke();
       }
       
