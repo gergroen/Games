@@ -16,6 +16,8 @@ jobs:
     name: E2E Tests
     outputs:
       test-result: ${{ steps.e2e-tests.outcome }}
+      browser-tests-skipped: ${{ steps.e2e-tests.outputs.browser-tests-skipped }}
+      test-failures: ${{ steps.e2e-tests.outputs.test-failures }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -118,14 +120,16 @@ jobs:
             
             # Run all E2E tests
             echo "Running complete E2E test suite..."
-            dotnet test Games.E2ETests --logger "console;verbosity=detailed" --logger "trx;LogFileName=full-test-results.trx" || {
-              echo "⚠️  Some E2E tests failed, but deployment will continue"
-              echo "TEST_FAILURES=true" >> $GITHUB_ENV
-            }
+            if dotnet test Games.E2ETests --logger "console;verbosity=detailed" --logger "trx;LogFileName=full-test-results.trx"; then
+              echo "✅ All E2E tests passed successfully"
+            else
+              echo "⚠️  Some E2E tests failed"
+              echo "test-failures=true" >> $GITHUB_OUTPUT
+            fi
           else
             echo "⚠️  Playwright browsers not available, skipping browser-dependent tests"
             echo "Only smoke tests completed successfully"
-            echo "BROWSER_TESTS_SKIPPED=true" >> $GITHUB_ENV
+            echo "browser-tests-skipped=true" >> $GITHUB_OUTPUT
           fi
         continue-on-error: true
         id: e2e-tests
@@ -165,25 +169,34 @@ jobs:
           if [ "${{ needs.e2e_tests.outputs.test-result }}" = "failure" ]; then
             echo "⚠️  WARNING: E2E tests reported failures"
             
-            if [ "$BROWSER_TESTS_SKIPPED" = "true" ]; then
+            if [ "${{ needs.e2e_tests.outputs.browser-tests-skipped }}" = "true" ]; then
               echo "ℹ️  Browser tests were skipped due to Playwright installation failure"
               echo "ℹ️  Only smoke tests were executed"
               echo "✅ Deployment will continue as basic functionality is validated"
-            elif [ "$TEST_FAILURES" = "true" ]; then
-              echo "⚠️  Some E2E tests failed, but deployment will continue"
-              echo "ℹ️  Please review test results and fix issues in subsequent PRs"
+              echo ""
+              echo "🚀 Proceeding with deployment..."
+              echo "ℹ️  The application has been validated and is ready for production"
+            elif [ "${{ needs.e2e_tests.outputs.test-failures }}" = "true" ]; then
+              echo "❌ E2E tests failed - blocking deployment"
+              echo "ℹ️  Please fix the failing tests before deployment can proceed"
+              echo "ℹ️  Check the test results artifact for detailed failure information"
+              echo ""
+              echo "🚫 Deployment blocked due to test failures"
+              exit 1
             else
-              echo "❌ E2E tests failed for unknown reasons"
-              echo "ℹ️  Deployment will continue, but manual testing is recommended"
+              echo "❌ E2E tests failed for unknown reasons - blocking deployment"
+              echo "ℹ️  Please investigate the test failures before proceeding"
+              echo ""
+              echo "🚫 Deployment blocked due to unknown test failures"
+              exit 1
             fi
           else
             echo "✅ E2E tests passed successfully"
             echo "✅ All systems validated - proceeding with deployment"
+            echo ""
+            echo "🚀 Proceeding with deployment..."
+            echo "ℹ️  The application has been validated and is ready for production"
           fi
-          
-          echo ""
-          echo "🚀 Proceeding with deployment..."
-          echo "ℹ️  The application has been validated and is ready for production"
       
       - name: Build And Deploy
         id: builddeploy
