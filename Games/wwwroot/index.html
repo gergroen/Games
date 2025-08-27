@@ -38,17 +38,123 @@
     <script src="js/gamepad.js"></script>
     <script src="_framework/blazor.webassembly.js"></script>
     
-    <!-- PWA Service Worker Registration -->
+    <!-- PWA Service Worker Registration with Update Handling -->
     <script>
         if ('serviceWorker' in navigator) {
+            let swRegistration = null;
+            
             window.addEventListener('load', function() {
                 navigator.serviceWorker.register('/service-worker.js')
                     .then(function(registration) {
                         console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                        swRegistration = registration;
+                        
+                        // Listen for service worker updates
+                        registration.addEventListener('updatefound', () => {
+                            console.log('New service worker version detected');
+                            const newWorker = registration.installing;
+                            
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    console.log('New service worker is ready');
+                                    showUpdateNotification();
+                                }
+                            });
+                        });
+                        
+                        // Check for updates periodically
+                        setInterval(() => {
+                            if (registration) {
+                                registration.update();
+                            }
+                        }, 60000); // Check every minute
+                        
                     }, function(err) {
                         console.log('ServiceWorker registration failed: ', err);
                     });
+                
+                // Listen for messages from service worker
+                navigator.serviceWorker.addEventListener('message', event => {
+                    if (event.data && event.data.type === 'APP_UPDATE_AVAILABLE') {
+                        console.log('App update available, version:', event.data.version);
+                        showUpdateNotification();
+                    }
+                });
             });
+            
+            // Show update notification to user
+            function showUpdateNotification() {
+                if (!document.getElementById('update-notification')) {
+                    const notification = document.createElement('div');
+                    notification.id = 'update-notification';
+                    notification.innerHTML = `
+                        <div style="
+                            position: fixed; 
+                            top: 20px; 
+                            right: 20px; 
+                            background: #1b6ec2; 
+                            color: white; 
+                            padding: 15px 20px; 
+                            border-radius: 8px; 
+                            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                            z-index: 10000;
+                            max-width: 300px;
+                            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                        ">
+                            <div style="margin-bottom: 10px; font-weight: bold;">
+                                🚀 App Update Available
+                            </div>
+                            <div style="margin-bottom: 15px; font-size: 14px;">
+                                A new version of Games is available with the latest features and improvements.
+                            </div>
+                            <div style="display: flex; gap: 10px;">
+                                <button onclick="applyUpdate()" style="
+                                    background: white; 
+                                    color: #1b6ec2; 
+                                    border: none; 
+                                    padding: 8px 16px; 
+                                    border-radius: 4px; 
+                                    cursor: pointer;
+                                    font-weight: bold;
+                                ">Update Now</button>
+                                <button onclick="dismissUpdate()" style="
+                                    background: transparent; 
+                                    color: white; 
+                                    border: 1px solid white; 
+                                    padding: 8px 16px; 
+                                    border-radius: 4px; 
+                                    cursor: pointer;
+                                ">Later</button>
+                            </div>
+                        </div>
+                    `;
+                    document.body.appendChild(notification);
+                }
+            }
+            
+            // Apply the update
+            window.applyUpdate = function() {
+                if (swRegistration && swRegistration.waiting) {
+                    // Tell the waiting service worker to skip waiting
+                    swRegistration.waiting.postMessage({ type: 'SKIP_WAITING' });
+                    
+                    // Listen for the controller change and reload
+                    navigator.serviceWorker.addEventListener('controllerchange', () => {
+                        window.location.reload();
+                    });
+                } else {
+                    // Fallback: just reload
+                    window.location.reload();
+                }
+            };
+            
+            // Dismiss the update notification
+            window.dismissUpdate = function() {
+                const notification = document.getElementById('update-notification');
+                if (notification) {
+                    notification.remove();
+                }
+            };
         }
     </script>
 </body>
