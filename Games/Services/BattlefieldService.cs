@@ -42,7 +42,7 @@ public class BattlefieldService
         // Player vs single enemy mode (no allies)
         Allies.Clear();
         Enemies.Clear();
-        Player = new PlayerTank { Id = 0, Team = Team.Player, X = 120, Y = GameHeight / 2.0 };
+        Player = new PlayerTank { Id = 0, Team = Team.Player, X = 120, Y = GameHeight / 2.0, BarrelAngle = 0 };
 
         Enemies.Add(new EnemyTank
         {
@@ -50,6 +50,8 @@ public class BattlefieldService
             Team = Team.Enemy,
             X = GameWidth - 140,
             Y = GameHeight / 2.0,
+            Angle = Math.PI, // Face left initially
+            BarrelAngle = Math.PI, // Barrel also faces left initially
             Behavior = EnemyBehavior.Aggressive,
             StrafeDir = _rand.Next(0, 2) == 0 ? -1 : 1,
             NextFireTimer = 0.8 + _rand.NextDouble() * 0.6,
@@ -71,7 +73,7 @@ public class BattlefieldService
     {
         Player.X += moveX * Player.Speed * dt; Player.Y += moveY * Player.Speed * dt; Clamp(Player);
 
-        // Set angle based on movement direction (will be overridden by aiming if active)
+        // Set body angle based on movement direction
         if (Math.Abs(moveX) > 0 || Math.Abs(moveY) > 0)
         {
             Player.Angle = Math.Atan2(moveY, moveX);
@@ -80,7 +82,7 @@ public class BattlefieldService
 
     public void AimPlayer(double aimX, double aimY)
     {
-        if (Math.Abs(aimX) > 0 || Math.Abs(aimY) > 0) Player.Angle = Math.Atan2(aimY, aimX);
+        if (Math.Abs(aimX) > 0 || Math.Abs(aimY) > 0) Player.BarrelAngle = Math.Atan2(aimY, aimX);
     }
 
     public void TryFirePlayer(Action? onFire)
@@ -105,12 +107,23 @@ public class BattlefieldService
             if (e.Hp <= 0) continue; double dx = e.X - ally.X; double dy = e.Y - ally.Y; double d2 = dx * dx + dy * dy; if (d2 < best) { best = d2; target = e; }
         }
         if (target == null) return;
-        double dxT = target.X - ally.X; double dyT = target.Y - ally.Y; double dist = Math.Sqrt(dxT * dxT + dyT * dyT) + 0.001; double ang = Math.Atan2(dyT, dxT); ally.Angle = ang;
+        double dxT = target.X - ally.X; double dyT = target.Y - ally.Y; double dist = Math.Sqrt(dxT * dxT + dyT * dyT) + 0.001; double ang = Math.Atan2(dyT, dxT);
+
+        // Set barrel to aim at target
+        ally.BarrelAngle = ang;
+
         double moveVX = 0, moveVY = 0;
         if (dist > 150) { moveVX = Math.Cos(ang); moveVY = Math.Sin(ang); }
         else if (dist < 110) { moveVX = -Math.Cos(ang); moveVY = -Math.Sin(ang); }
         else { moveVX = Math.Cos(ang + ally.StrafeDir * Math.PI / 2) * 0.8; moveVY = Math.Sin(ang + ally.StrafeDir * Math.PI / 2) * 0.8; }
         Normalise(ref moveVX, ref moveVY);
+
+        // Set body angle to movement direction
+        if (Math.Abs(moveVX) > 0 || Math.Abs(moveVY) > 0)
+        {
+            ally.Angle = Math.Atan2(moveVY, moveVX);
+        }
+
         ally.X += moveVX * ally.Speed * dt; ally.Y += moveVY * ally.Speed * dt; Clamp(ally);
         ally.NextFireTimer -= dt; if (ally.NextFireTimer <= 0) { Fire(ally); ally.NextFireTimer = 0.7 + _rand.NextDouble() * 0.6; }
     }
@@ -127,7 +140,11 @@ public class BattlefieldService
         }
         if (target == null) return;
         enemy.DecisionTimer -= dt; if (enemy.DecisionTimer <= 0 && (enemy.Behavior == EnemyBehavior.Wanderer || enemy.Behavior == EnemyBehavior.Flanker)) { enemy.RandomDirAngle = _rand.NextDouble() * Math.PI * 2; enemy.DecisionTimer = 0.8 + _rand.NextDouble() * 1.2; }
-        double dx = target.X - enemy.X; double dy = target.Y - enemy.Y; double dist = Math.Sqrt(dx * dx + dy * dy) + 0.001; double targetAngle = Math.Atan2(dy, dx); enemy.Angle = targetAngle;
+        double dx = target.X - enemy.X; double dy = target.Y - enemy.Y; double dist = Math.Sqrt(dx * dx + dy * dy) + 0.001; double targetAngle = Math.Atan2(dy, dx);
+
+        // Set barrel to aim at target
+        enemy.BarrelAngle = targetAngle;
+
         double moveVX = 0, moveVY = 0; double desired = 140;
         switch (enemy.Behavior)
         {
@@ -155,13 +172,22 @@ public class BattlefieldService
                 break;
         }
         Normalise(ref moveVX, ref moveVY);
+
+        // Set body angle to movement direction
+        if (Math.Abs(moveVX) > 0 || Math.Abs(moveVY) > 0)
+        {
+            enemy.Angle = Math.Atan2(moveVY, moveVX);
+        }
+
         enemy.X += moveVX * enemy.Speed * dt; enemy.Y += moveVY * enemy.Speed * dt; Clamp(enemy);
         enemy.NextFireTimer -= dt; if (enemy.NextFireTimer <= 0) { Fire(enemy); enemy.NextFireTimer = enemy.Behavior == EnemyBehavior.Sniper ? 1.3 + _rand.NextDouble() * 1.0 : 0.8 + _rand.NextDouble() * 0.7; }
     }
 
     public void Fire(Tank t)
     {
-        Projectiles.Add(new Projectile { X = t.X + Math.Cos(t.Angle) * 20, Y = t.Y + Math.Sin(t.Angle) * 20, Angle = t.Angle, Speed = 300, OwnerTeam = t.Team });
+        // Use barrel angle for firing direction
+        double fireAngle = t.BarrelAngle != 0 ? t.BarrelAngle : t.Angle;
+        Projectiles.Add(new Projectile { X = t.X + Math.Cos(fireAngle) * 20, Y = t.Y + Math.Sin(fireAngle) * 20, Angle = fireAngle, Speed = 300, OwnerTeam = t.Team });
     }
 
     private void UpdateProjectiles(double dt)
