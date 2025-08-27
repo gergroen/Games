@@ -156,6 +156,98 @@
                 }
             };
         }
+        
+        // Add offline detection and loading timeout
+        let loadingTimeout;
+        let hasBlazorStarted = false;
+        
+        // Set a timeout to detect if the app gets stuck loading
+        function startLoadingTimeout() {
+            loadingTimeout = setTimeout(() => {
+                if (!hasBlazorStarted && !navigator.onLine) {
+                    showOfflineError();
+                }
+            }, 30000); // 30 second timeout
+        }
+        
+        // Show offline error message
+        function showOfflineError() {
+            const loadingDiv = document.getElementById('app');
+            if (loadingDiv && loadingDiv.innerHTML.includes('loading-progress')) {
+                loadingDiv.innerHTML = `
+                    <div style="text-align: center; padding: 2rem; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">
+                        <div style="color: #dc3545; font-size: 3rem; margin-bottom: 1rem;">📱</div>
+                        <h2 style="color: #dc3545; margin-bottom: 1rem;">App Offline</h2>
+                        <p style="color: #6c757d; margin-bottom: 1.5rem;">
+                            The Games app requires an internet connection for the initial load.<br>
+                            Some required files are not available offline.
+                        </p>
+                        <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                            <button onclick="window.location.reload()" style="
+                                background: #007bff; 
+                                color: white; 
+                                border: none; 
+                                padding: 0.5rem 1rem; 
+                                border-radius: 4px; 
+                                cursor: pointer;
+                                font-size: 1rem;
+                            ">Try Again</button>
+                            <button onclick="checkOnlineStatus()" style="
+                                background: #28a745; 
+                                color: white; 
+                                border: none; 
+                                padding: 0.5rem 1rem; 
+                                border-radius: 4px; 
+                                cursor: pointer;
+                                font-size: 1rem;
+                            ">Check Connection</button>
+                        </div>
+                        <p style="color: #6c757d; margin-top: 1rem; font-size: 0.9rem;">
+                            Status: <span id="connection-status">${navigator.onLine ? 'Online' : 'Offline'}</span>
+                        </p>
+                    </div>
+                `;
+            }
+        }
+        
+        // Check online status
+        function checkOnlineStatus() {
+            const statusElement = document.getElementById('connection-status');
+            if (statusElement) {
+                statusElement.textContent = navigator.onLine ? 'Online' : 'Offline';
+                if (navigator.onLine) {
+                    setTimeout(() => window.location.reload(), 1000);
+                }
+            }
+        }
+        
+        // Listen for Blazor startup
+        window.addEventListener('beforeunload', () => {
+            clearTimeout(loadingTimeout);
+        });
+        
+        // Listen for online/offline events
+        window.addEventListener('online', () => {
+            clearTimeout(loadingTimeout);
+        });
+        
+        window.addEventListener('offline', () => {
+            startLoadingTimeout();
+        });
+        
+        // Start the timeout when the page loads
+        window.addEventListener('load', () => {
+            startLoadingTimeout();
+            
+            // Try to detect when Blazor has started
+            const checkBlazorStartup = setInterval(() => {
+                if (window.Blazor && window.Blazor.start) {
+                    hasBlazorStarted = true;
+                    clearTimeout(loadingTimeout);
+                    clearInterval(checkBlazorStartup);
+                }
+            }, 1000);
+        });
     </script>
 </body>
 
