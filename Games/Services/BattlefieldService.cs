@@ -216,6 +216,24 @@ public class BattlefieldService
                 var en = Enemies[e]; if (en.Hp <= 0 || en.Team == pr.OwnerTeam) continue; if (Hit(pr, en)) { en.Hp -= 10; onExplosion?.Invoke(pr); Projectiles.RemoveAt(i); removed = true; }
             }
         }
+
+        // Check for bullet-to-bullet collisions
+        for (int i = Projectiles.Count - 1; i >= 0; i--)
+        {
+            for (int j = i - 1; j >= 0; j--)
+            {
+                var pr1 = Projectiles[i];
+                var pr2 = Projectiles[j];
+                if (pr1.OwnerTeam != pr2.OwnerTeam && Hit(pr1, pr2))
+                {
+                    onExplosion?.Invoke(pr1);
+                    onExplosion?.Invoke(pr2);
+                    Projectiles.RemoveAt(i);
+                    Projectiles.RemoveAt(j);
+                    break; // Exit inner loop since pr1 is already removed
+                }
+            }
+        }
     }
 
     private void ApplySeparation()
@@ -236,6 +254,8 @@ public class BattlefieldService
     }
 
     private bool Hit(Projectile pr, Tank t) => (pr.X - t.X) * (pr.X - t.X) + (pr.Y - t.Y) * (pr.Y - t.Y) < 22 * 22;
+
+    private bool Hit(Projectile pr1, Projectile pr2) => (pr1.X - pr2.X) * (pr1.X - pr2.X) + (pr1.Y - pr2.Y) * (pr1.Y - pr2.Y) < 8 * 8;
 
     private void Clamp(Tank t)
     {
