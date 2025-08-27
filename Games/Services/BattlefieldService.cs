@@ -70,6 +70,12 @@ public class BattlefieldService
     public void MovePlayer(double moveX, double moveY, double dt)
     {
         Player.X += moveX * Player.Speed * dt; Player.Y += moveY * Player.Speed * dt; Clamp(Player);
+
+        // Set angle based on movement direction (will be overridden by aiming if active)
+        if (Math.Abs(moveX) > 0 || Math.Abs(moveY) > 0)
+        {
+            Player.Angle = Math.Atan2(moveY, moveX);
+        }
     }
 
     public void AimPlayer(double aimX, double aimY)
