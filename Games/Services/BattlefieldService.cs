@@ -185,8 +185,8 @@ public class BattlefieldService
 
     public void Fire(Tank t)
     {
-        // Use barrel angle for firing direction
-        double fireAngle = t.BarrelAngle != 0 ? t.BarrelAngle : t.Angle;
+        // Always use barrel angle for firing direction
+        double fireAngle = t.BarrelAngle;
         Projectiles.Add(new Projectile { X = t.X + Math.Cos(fireAngle) * 20, Y = t.Y + Math.Sin(fireAngle) * 20, Angle = fireAngle, Speed = 300, OwnerTeam = t.Team });
     }
 
