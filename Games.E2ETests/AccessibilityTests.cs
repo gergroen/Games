@@ -23,14 +23,31 @@ public class AccessibilityTests : BaseE2ETest
         var restButton = Page.Locator("button:has-text('Rest (X)')");
         await Expect(restButton).ToBeVisibleAsync();
 
-        // Verify buttons are keyboard accessible
-        await Page.Keyboard.PressAsync("Tab");
-        await Page.Keyboard.PressAsync("Tab");
-        await Page.Keyboard.PressAsync("Tab");
-
-        // Check that focus is visible (buttons should be reachable via keyboard)
+        // Verify buttons are keyboard accessible by focusing directly on them
+        await feedButton.FocusAsync();
         var focusedElement = await Page.EvaluateAsync<string>("document.activeElement.tagName");
-        Assert.AreEqual("BUTTON", focusedElement, "Should be able to focus on buttons via keyboard");
+        Assert.AreEqual("BUTTON", focusedElement, "Feed button should be focusable");
+
+        // Test that Tab key can navigate to game buttons (tab through navigation first)
+        await Page.Keyboard.PressAsync("Tab"); // Navigate through nav elements
+        
+        // Tab through until we reach a game button (allowing for navigation menu items)
+        var maxTabs = 10; // Reasonable limit to prevent infinite loop
+        var foundGameButton = false;
+        
+        for (int i = 0; i < maxTabs; i++)
+        {
+            await Page.Keyboard.PressAsync("Tab");
+            var currentElement = await Page.EvaluateAsync<string>("document.activeElement.textContent || ''");
+            
+            if (currentElement.Contains("Feed") || currentElement.Contains("Play") || currentElement.Contains("Rest"))
+            {
+                foundGameButton = true;
+                break;
+            }
+        }
+        
+        Assert.IsTrue(foundGameButton, "Should be able to navigate to game buttons via keyboard");
     }
 
     [TestMethod]
@@ -46,11 +63,33 @@ public class AccessibilityTests : BaseE2ETest
         var fullscreenButton = Page.Locator("button[aria-label='Fullscreen']");
         await Expect(fullscreenButton).ToBeVisibleAsync();
 
-        // Verify keyboard navigation works
-        await Page.Keyboard.PressAsync("Tab");
+        // Verify keyboard navigation works by directly testing button focusability
+        await restartButton.FocusAsync();
         var focusedElement = await Page.EvaluateAsync<string>("document.activeElement.tagName");
-        Assert.IsTrue(focusedElement == "BUTTON" || focusedElement == "CANVAS",
-            "Should be able to navigate to interactive elements via keyboard");
+        Assert.AreEqual("BUTTON", focusedElement, "Restart button should be focusable");
+
+        // Test that Tab key can navigate to tank game controls (allowing for navigation menu)
+        await Page.Keyboard.PressAsync("Tab"); // Start navigation
+        
+        // Tab through until we reach tank controls (allowing for navigation menu items)
+        var maxTabs = 15; // More tabs needed for tank game due to more complex UI
+        var foundInteractiveElement = false;
+        
+        for (int i = 0; i < maxTabs; i++)
+        {
+            await Page.Keyboard.PressAsync("Tab");
+            var currentElement = await Page.EvaluateAsync<string>("document.activeElement.tagName");
+            var elementContent = await Page.EvaluateAsync<string>("document.activeElement.textContent || document.activeElement.getAttribute('aria-label') || ''");
+            
+            if (currentElement == "BUTTON" && (elementContent.Contains("Restart") || elementContent.Contains("Fullscreen") || elementContent.Contains("AUTO") || elementContent.Contains("FIRE")) ||
+                currentElement == "CANVAS")
+            {
+                foundInteractiveElement = true;
+                break;
+            }
+        }
+        
+        Assert.IsTrue(foundInteractiveElement, "Should be able to navigate to tank controls via keyboard");
     }
 
     [TestMethod]
