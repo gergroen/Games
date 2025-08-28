@@ -17,13 +17,63 @@ This project contains comprehensive end-to-end tests for both the Tamagotchi and
 
 All browser tests are marked with `[TestCategory("RequiresBrowser")]` to allow selective execution.
 
+## Coding Copilot Integration
+
+The E2E test runner (`./run-e2e-tests.sh`) is specifically designed for automated environments like GitHub Copilot. It provides:
+
+### Automated Workflow
+1. **Environment Setup**: Automatically checks and installs .NET 9.0 SDK
+2. **Application Management**: Starts the Games application if not running
+3. **Graceful Degradation**: Falls back to smoke tests if browser installation fails
+4. **Clear Reporting**: Provides detailed status and results
+
+### Usage Examples
+```bash
+# Standard automated testing (recommended)
+./run-e2e-tests.sh
+
+# Fast validation (smoke tests only)
+./run-e2e-tests.sh --smoke-only
+
+# Debugging (verbose output)
+./run-e2e-tests.sh --verbose
+```
+
+### Expected Behavior
+- **Success Case**: Both smoke and browser tests pass
+- **Degraded Case**: Smoke tests pass, browser tests skipped (still returns success)
+- **Failure Case**: Smoke tests fail (indicates application issues)
+
+The script returns exit code 0 for success (including degraded scenarios) and exit code 1 for critical failures.
+
 ## Running Tests
 
-### Prerequisites
+### Quick Start (Recommended for Coding Copilot)
+
+**Use the automated E2E test runner (handles everything automatically):**
+```bash
+# From the repository root directory
+./run-e2e-tests.sh
+```
+
+This script automatically:
+- Installs .NET 9.0 SDK if needed
+- Starts the Games application if not running
+- Builds and runs tests with graceful degradation
+- Provides clear feedback on results
+
+**Available options:**
+```bash
+./run-e2e-tests.sh --smoke-only    # Run only smoke tests (fastest, most reliable)
+./run-e2e-tests.sh --verbose       # Enable detailed output
+./run-e2e-tests.sh --help          # Show help
+```
+
+### Manual Testing (Advanced Users)
+
+**Prerequisites:**
 - .NET 9.0 SDK
 - Running Games application (on http://localhost:5080)
-
-### Local Development
 
 **Run smoke tests only (no browser required):**
 ```bash
