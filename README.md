@@ -200,22 +200,98 @@ The application is automatically deployed to Azure Static Web Apps on every push
 - **Accessibility**: Ensure keyboard navigation works properly
 - **Mobile**: Test touch controls on mobile devices
 
-## 📝 Manual Testing
+## 🧪 Testing
 
-### Virtual Pet Game Validation
+### Automated Testing
+
+The Games application includes comprehensive end-to-end (E2E) testing using Microsoft Playwright and MSTest.
+
+#### Test Categories
+
+**🚀 Smoke Tests (4 tests)**
+- Basic application availability and HTTP response validation
+- Static asset serving verification (CSS, JS, images)
+- Page routing functionality for both games
+- No browser installation required
+
+**🎮 Game Functionality Tests (16 tests)**
+- **Tamagotchi Game (7 tests)**: Pet interactions, stat displays, gamepad indicators
+- **Tank Battle Game (9 tests)**: Canvas rendering, HUD functionality, controls
+
+**♿ Accessibility Tests (6 tests)**
+- Keyboard navigation and focus management
+- ARIA labels and semantic HTML validation
+- Screen reader compatibility
+- Color contrast and visual accessibility
+
+**📱 PWA Tests (5 tests)**
+- Service Worker registration and offline support
+- Web App Manifest validation
+- App icon accessibility
+- Installation capability verification
+
+**⚡ Performance Tests (6 tests)**
+- Application load time measurement
+- Game interaction responsiveness
+- Canvas rendering performance
+- Memory usage and resource optimization
+
+#### Running Tests
+
+**Prerequisites:**
+```bash
+# Install .NET 9.0 SDK and start the application
+dotnet run --project Games  # Must be running on localhost:5080
+```
+
+**Quick smoke tests (no browser required):**
+```bash
+cd Games.E2ETests
+dotnet test --filter "TestCategory!=RequiresBrowser"
+```
+
+**Full test suite (requires Playwright browsers):**
+```bash
+# Install browsers (first time only)
+pwsh bin/Debug/net9.0/playwright.ps1 install --with-deps
+
+# Run all tests
+dotnet test --logger "console;verbosity=detailed"
+```
+
+**Specific test categories:**
+```bash
+dotnet test --filter "ClassName=TamagotchiGameTests"
+dotnet test --filter "ClassName=TankBattleGameTests"
+dotnet test --filter "ClassName=AccessibilityTests"
+dotnet test --filter "ClassName=PWATests"
+dotnet test --filter "ClassName=PerformanceTests"
+```
+
+For detailed testing documentation, see [`Games.E2ETests/README.md`](Games.E2ETests/README.md).
+
+### Manual Testing
+
+#### Virtual Pet Game Validation
 1. Navigate to `/` - verify pet displays with stats
 2. Test all action buttons (Feed, Play, Rest)
 3. Verify gamepad connection status
 4. Check responsive design on mobile
 5. Test keyboard navigation (Tab/Enter/Space)
 
-### Tank Battle Game Validation
+#### Tank Battle Game Validation
 1. Navigate to `/tanks` - verify battlefield loads
 2. Test Fire button and Auto toggle
 3. Verify HUD displays HP correctly
 4. Test Restart and Fullscreen buttons
 5. Check virtual joysticks on mobile
 6. Verify smooth 60fps animation
+
+#### PWA Testing
+1. Test offline functionality after initial load
+2. Verify app installation prompt on mobile
+3. Check service worker updates and caching
+4. Validate manifest.json and icon accessibility
 
 ## 📄 License
 
