@@ -40,12 +40,38 @@ For urgent fixes or small changes:
 - **Format code**: `dotnet format` -- takes 5-10 seconds. NEVER CANCEL. Set timeout to 30+ seconds.
 - **Verify formatting**: `dotnet format --verify-no-changes` -- takes 2-3 seconds. Must pass before committing.
 - **REQUIRED**: All code must pass formatting before any commit
-- **E2E Testing**: Comprehensive end-to-end tests available in `Games.E2ETests/` (38 tests total)
-  - Run smoke tests: `dotnet test Games.E2ETests --filter "TestCategory!=RequiresBrowser"`
-  - Run all tests: `dotnet test Games.E2ETests` (requires Playwright browsers)
-  - Tests cover: Game functionality, accessibility, PWA features, performance
-- **Manual Testing**: Games are interaction-heavy, so manual validation is still required for full verification
+- **E2E Testing**: Comprehensive E2E tests available using Playwright. Run with: `./run-e2e-tests.sh`
+- **Testing Strategy**: No unit tests (games are interaction-heavy), but robust E2E testing covers both games
 - Code style: C# conventions with implicit usings enabled, nullable reference types enabled
+
+## E2E Testing
+
+### Automated Testing for Coding Copilot
+**Use the automated E2E test runner** for reliable testing in automated environments:
+```bash
+./run-e2e-tests.sh              # Full testing with graceful degradation
+./run-e2e-tests.sh --smoke-only # Fast smoke tests only (most reliable)
+./run-e2e-tests.sh --verbose    # Detailed output for debugging
+```
+
+### Test Coverage
+- **Smoke Tests**: Basic HTTP connectivity, page loading, static assets (always works)
+- **Browser Tests**: Full UI interaction testing using Playwright (requires browser installation)
+- **Games Covered**: Both Tamagotchi and Tank Battle games with comprehensive scenarios
+- **Responsive Testing**: Mobile viewport, touch controls, keyboard navigation
+
+### Graceful Degradation
+The test runner automatically handles:
+- .NET 9.0 SDK installation if missing
+- Games application startup if not running
+- Browser installation with multiple fallback strategies
+- Clear reporting of what worked vs what failed
+- Exit code 0 for success (including degraded scenarios where only smoke tests pass)
+
+### Expected Results
+- **Ideal**: All smoke and browser tests pass
+- **Acceptable**: Smoke tests pass, browser tests skipped (common in CI environments)
+- **Failure**: Smoke tests fail (indicates application issues requiring attention)
 
 ## Validation Scenarios
 
@@ -134,7 +160,8 @@ The Games repository follows a clean Blazor WebAssembly architecture with clear 
 6. Test with both mouse/touch and gamepad input if applicable
 7. Run formatting: `dotnet format`
 8. Build and test: `dotnet build Games.sln && dotnet run --project Games`
-9. Validate with manual testing scenarios above
+9. **Run E2E tests**: `./run-e2e-tests.sh` to validate changes
+10. Validate with manual testing scenarios above
 
 ### UI Component Development
 - **Razor components**: Use `@page` directive for routing, `@inject` for services

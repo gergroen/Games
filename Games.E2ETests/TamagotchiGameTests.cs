@@ -1,5 +1,5 @@
 using Microsoft.Playwright;
-using Microsoft.Playwright.MSTest;
+using static Microsoft.Playwright.Assertions;
 
 namespace Games.E2ETests;
 
@@ -11,6 +11,8 @@ public class TamagotchiGameTests : BaseE2ETest
     [TestMethod]
     public async Task NavigateToTamagotchi_ShouldDisplayPetWithStats()
     {
+        if (Page == null) throw new InvalidOperationException("Page not initialized");
+
         // Navigate to the Tamagotchi page
         await Page.GotoAsync(BaseUrl);
 
@@ -38,6 +40,8 @@ public class TamagotchiGameTests : BaseE2ETest
     [TestMethod]
     public async Task FeedButton_ShouldBeClickableAndDisplayCorrectText()
     {
+        if (Page == null) throw new InvalidOperationException("Page not initialized");
+
         await Page.GotoAsync(BaseUrl);
 
         // Wait for Blazor and the page to fully load
@@ -62,6 +66,8 @@ public class TamagotchiGameTests : BaseE2ETest
     [TestMethod]
     public async Task PlayButton_ShouldBeClickableAndDisplayCorrectText()
     {
+        if (Page == null) throw new InvalidOperationException("Page not initialized");
+
         await Page.GotoAsync(BaseUrl);
 
         // Find the Play button (with B gamepad key indicator)
@@ -79,6 +85,8 @@ public class TamagotchiGameTests : BaseE2ETest
     [TestMethod]
     public async Task RestButton_ShouldBeClickableAndDisplayCorrectText()
     {
+        if (Page == null) throw new InvalidOperationException("Page not initialized");
+
         await Page.GotoAsync(BaseUrl);
 
         // Find the Rest button (with X gamepad key indicator)
@@ -96,6 +104,8 @@ public class TamagotchiGameTests : BaseE2ETest
     [TestMethod]
     public async Task GamepadConnectionStatus_ShouldBeDisplayed()
     {
+        if (Page == null) throw new InvalidOperationException("Page not initialized");
+
         await Page.GotoAsync(BaseUrl);
 
         // Wait for Blazor and the page to fully load
@@ -114,6 +124,8 @@ public class TamagotchiGameTests : BaseE2ETest
     [TestMethod]
     public async Task ResponsiveDesign_ShouldAdaptToMobileViewport()
     {
+        if (Page == null) throw new InvalidOperationException("Page not initialized");
+
         // Set mobile viewport
         await Page.SetViewportSizeAsync(375, 667);
         await Page.GotoAsync(BaseUrl);
@@ -128,6 +140,8 @@ public class TamagotchiGameTests : BaseE2ETest
     [TestMethod]
     public async Task KeyboardNavigation_ShouldWorkWithTabAndEnter()
     {
+        if (Page == null) throw new InvalidOperationException("Page not initialized");
+
         await Page.GotoAsync(BaseUrl);
 
         // Focus on the first button using Tab

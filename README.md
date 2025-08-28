@@ -151,6 +151,12 @@ Games/
    dotnet publish Games -c Release
    ```
 
+4. **Run E2E tests** (validates both games)
+   ```bash
+   ./run-e2e-tests.sh              # Full testing with graceful degradation
+   ./run-e2e-tests.sh --smoke-only # Fast smoke tests only
+   ```
+
 ### Adding New Features
 
 1. **Game Logic**: Implement in the appropriate service class (`PetGameService.cs` or `BattlefieldService.cs`)
@@ -195,12 +201,33 @@ The application is automatically deployed to Azure Static Web Apps on every push
 ### Development Guidelines
 
 - **Minimal Changes**: Make the smallest possible changes to achieve your goal
-- **Testing**: Manually validate both games after making changes
+- **Testing**: Use `./run-e2e-tests.sh` for automated validation of both games
+- **Manual Testing**: Manually validate both games after making changes
 - **Automated Testing**: Run E2E tests to ensure no regressions (`dotnet test Games.E2ETests`)
 - **Performance**: Maintain smooth 60fps gameplay
 - **Accessibility**: Ensure keyboard navigation works properly
 - **Mobile**: Test touch controls on mobile devices
 - **Code Quality**: Run `dotnet format` before committing changes
+
+### Automated Testing
+
+The repository includes comprehensive E2E tests using Playwright:
+
+```bash
+./run-e2e-tests.sh              # Full testing (recommended)
+./run-e2e-tests.sh --smoke-only # Fast validation  
+./run-e2e-tests.sh --help       # See all options
+```
+
+The test runner automatically:
+- Installs .NET 9.0 SDK if needed
+- Starts the Games application if not running
+- Runs tests with graceful degradation (smoke tests when browsers unavailable)
+- Provides clear feedback on results
+
+See [Games.E2ETests/README.md](Games.E2ETests/README.md) for detailed testing documentation.
+
+## 📝 Manual Testing
 
 #### Test Development Guidelines
 
