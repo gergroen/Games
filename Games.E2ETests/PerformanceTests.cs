@@ -160,7 +160,7 @@ public class PerformanceTests : BaseE2ETest
         if (resourceSizes.Count == 0)
         {
             await Page.WaitForTimeoutAsync(2000);
-            
+
             resourceSizes = await Page.EvaluateAsync<Dictionary<string, long>>(@"
                 () => {
                     const entries = performance.getEntriesByType('resource');
@@ -189,7 +189,7 @@ public class PerformanceTests : BaseE2ETest
                     return 'performance' in window && 'getEntriesByType' in performance;
                 }
             ");
-            
+
             if (hasPerformanceAPI)
             {
                 // If API is available but no resources, it might be a timing issue in CI
@@ -200,7 +200,7 @@ public class PerformanceTests : BaseE2ETest
                         return entries.length;
                     }
                 ");
-                
+
                 // Accept the test if Performance API is working (even if transferSize is not available)
                 Assert.IsTrue(totalEntries >= 0, "Performance API should be accessible");
             }

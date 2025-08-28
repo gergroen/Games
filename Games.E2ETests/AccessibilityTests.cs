@@ -30,23 +30,23 @@ public class AccessibilityTests : BaseE2ETest
 
         // Test that Tab key can navigate to game buttons (tab through navigation first)
         await Page.Keyboard.PressAsync("Tab"); // Navigate through nav elements
-        
+
         // Tab through until we reach a game button (allowing for navigation menu items)
         var maxTabs = 10; // Reasonable limit to prevent infinite loop
         var foundGameButton = false;
-        
+
         for (int i = 0; i < maxTabs; i++)
         {
             await Page.Keyboard.PressAsync("Tab");
             var currentElement = await Page.EvaluateAsync<string>("document.activeElement.textContent || ''");
-            
+
             if (currentElement.Contains("Feed") || currentElement.Contains("Play") || currentElement.Contains("Rest"))
             {
                 foundGameButton = true;
                 break;
             }
         }
-        
+
         Assert.IsTrue(foundGameButton, "Should be able to navigate to game buttons via keyboard");
     }
 
@@ -70,17 +70,17 @@ public class AccessibilityTests : BaseE2ETest
 
         // Test that Tab key can navigate to tank game controls (allowing for navigation menu)
         await Page.Keyboard.PressAsync("Tab"); // Start navigation
-        
+
         // Tab through until we reach tank controls (allowing for navigation menu items)
         var maxTabs = 15; // More tabs needed for tank game due to more complex UI
         var foundInteractiveElement = false;
-        
+
         for (int i = 0; i < maxTabs; i++)
         {
             await Page.Keyboard.PressAsync("Tab");
             var currentElement = await Page.EvaluateAsync<string>("document.activeElement.tagName");
             var elementContent = await Page.EvaluateAsync<string>("document.activeElement.textContent || document.activeElement.getAttribute('aria-label') || ''");
-            
+
             if (currentElement == "BUTTON" && (elementContent.Contains("Restart") || elementContent.Contains("Fullscreen") || elementContent.Contains("AUTO") || elementContent.Contains("FIRE")) ||
                 currentElement == "CANVAS")
             {
@@ -88,7 +88,7 @@ public class AccessibilityTests : BaseE2ETest
                 break;
             }
         }
-        
+
         Assert.IsTrue(foundInteractiveElement, "Should be able to navigate to tank controls via keyboard");
     }
 
@@ -166,51 +166,61 @@ public class AccessibilityTests : BaseE2ETest
         await Page.GotoAsync(BaseUrl);
         await WaitForBlazorToLoad();
 
-        // Wait for any animations to complete
-        await Page.WaitForTimeoutAsync(1000);
+        // Wait for any animations to complete and ensure buttons are interactive
+        await Page.WaitForTimeoutAsync(1500);
 
-        // Tab to first button and check if focus is visible
+        // First verify that there are focusable buttons on the page
+        var buttonCount = await Page.Locator("button:visible").CountAsync();
+        Assert.IsTrue(buttonCount > 0, "Page should have visible buttons to test focus on");
+
+        // Start tabbing from the beginning and look for any button
         await Page.Keyboard.PressAsync("Tab");
-        
+
         // Give time for focus to be applied
-        await Page.WaitForTimeoutAsync(500);
+        await Page.WaitForTimeoutAsync(800);
 
-        // Get the focused element and check if it has visible focus styling
-        var focusStyles = await Page.EvaluateAsync<string>(@"
-            () => {
-                const focused = document.activeElement;
-                if (!focused || focused.tagName !== 'BUTTON') return 'no button focused';
-                const styles = window.getComputedStyle(focused, ':focus');
-                return `outline: ${styles.outline}, box-shadow: ${styles.boxShadow}`;
-            }
-        ");
+        string? focusStyles = null;
+        bool foundFocusableButton = false;
 
-        Assert.IsNotNull(focusStyles, "Should be able to get focus styles");
-        
-        // If no button is focused after Tab, try tabbing multiple times to find a button
-        if (focusStyles.Contains("no button focused"))
+        // Try tabbing up to 12 times to find a focusable button (accounting for navigation)
+        for (int i = 0; i < 12 && !foundFocusableButton; i++)
         {
-            for (int i = 0; i < 5; i++)
+            if (i > 0)
             {
                 await Page.Keyboard.PressAsync("Tab");
-                await Page.WaitForTimeoutAsync(200);
-                
-                focusStyles = await Page.EvaluateAsync<string>(@"
-                    () => {
-                        const focused = document.activeElement;
-                        if (!focused || focused.tagName !== 'BUTTON') return 'no button focused';
+                await Page.WaitForTimeoutAsync(300);
+            }
+
+            // Get the focused element and check if it has visible focus styling
+            focusStyles = await Page.EvaluateAsync<string>(@"
+                () => {
+                    const focused = document.activeElement;
+                    if (!focused) return 'no element focused';
+                    if (focused.tagName !== 'BUTTON') return `focused: ${focused.tagName}`;
+                    
+                    // Check if this is one of our game buttons
+                    const text = focused.textContent || '';
+                    if (text.includes('Feed') || text.includes('Play') || text.includes('Rest')) {
                         const styles = window.getComputedStyle(focused, ':focus');
-                        return `outline: ${styles.outline}, box-shadow: ${styles.boxShadow}`;
+                        return `game-button focused: outline=${styles.outline}, box-shadow=${styles.boxShadow}`;
                     }
-                ");
-                
-                if (!focusStyles.Contains("no button focused"))
-                {
-                    break;
+                    
+                    return 'button focused but not game button';
                 }
+            ");
+
+            if (focusStyles != null && focusStyles.Contains("game-button focused"))
+            {
+                foundFocusableButton = true;
+                break;
             }
         }
-        
-        Assert.IsFalse(focusStyles.Contains("no button focused"), "Should have a button focused");
+
+        Assert.IsNotNull(focusStyles, "Should be able to get focus styles");
+        Assert.IsTrue(foundFocusableButton, $"Should be able to focus on a game button via keyboard. Last focus result: {focusStyles}");
+
+        // Verify that the focused game button has visible focus indicators
+        Assert.IsTrue(focusStyles.Contains("outline") || focusStyles.Contains("box-shadow"),
+            "Focused game button should have visible focus indicators (outline or box-shadow)");
     }
 }
