@@ -3,11 +3,7 @@
 
 <div id="tankGameContainer" class="tank-game-container">
     <div class="hud-hp">
-        @{
-            var enemy = Battlefield.Enemies.FirstOrDefault();
-            var enemyHp = enemy?.Hp ?? 0;
-        }
-        Player HP: @Battlefield.Player.Hp | Enemy HP: @enemyHp
+        Player HP: @Battlefield.Player.Hp | Enemies Remaining: @Battlefield.EnemiesRemaining
         <button class="btn btn-sm btn-primary ms-2 btn-icon" @onclick="Restart" title="Restart"
             aria-label="Restart">&#x21bb;</button>
         <button class="btn btn-sm btn-secondary ms-2 btn-icon" @onclick="ToggleFullscreen" title="Fullscreen"
