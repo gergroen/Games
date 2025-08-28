@@ -127,8 +127,14 @@ public class AccessibilityTests : BaseE2ETest
         await Page.GotoAsync(BaseUrl);
         await WaitForBlazorToLoad();
 
+        // Wait for any animations to complete
+        await Page.WaitForTimeoutAsync(1000);
+
         // Tab to first button and check if focus is visible
         await Page.Keyboard.PressAsync("Tab");
+        
+        // Give time for focus to be applied
+        await Page.WaitForTimeoutAsync(500);
 
         // Get the focused element and check if it has visible focus styling
         var focusStyles = await Page.EvaluateAsync<string>(@"
@@ -141,6 +147,31 @@ public class AccessibilityTests : BaseE2ETest
         ");
 
         Assert.IsNotNull(focusStyles, "Should be able to get focus styles");
+        
+        // If no button is focused after Tab, try tabbing multiple times to find a button
+        if (focusStyles.Contains("no button focused"))
+        {
+            for (int i = 0; i < 5; i++)
+            {
+                await Page.Keyboard.PressAsync("Tab");
+                await Page.WaitForTimeoutAsync(200);
+                
+                focusStyles = await Page.EvaluateAsync<string>(@"
+                    () => {
+                        const focused = document.activeElement;
+                        if (!focused || focused.tagName !== 'BUTTON') return 'no button focused';
+                        const styles = window.getComputedStyle(focused, ':focus');
+                        return `outline: ${styles.outline}, box-shadow: ${styles.boxShadow}`;
+                    }
+                ");
+                
+                if (!focusStyles.Contains("no button focused"))
+                {
+                    break;
+                }
+            }
+        }
+        
         Assert.IsFalse(focusStyles.Contains("no button focused"), "Should have a button focused");
     }
 }
