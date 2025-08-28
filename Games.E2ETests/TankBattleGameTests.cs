@@ -146,7 +146,7 @@ public class TankBattleGameTests : BaseE2ETest
     public async Task VirtualJoysticks_ShouldBeVisibleOnMobileViewport()
     {
         if (Page == null) throw new InvalidOperationException("Page not initialized");
-        
+
         // Set mobile viewport
         await Page.SetViewportSizeAsync(375, 667);
         await Page.GotoAsync($"{BaseUrl}/tanks");
@@ -209,7 +209,7 @@ public class TankBattleGameTests : BaseE2ETest
         {
             // If no navigation menu, use direct navigation
             if (Page == null) throw new InvalidOperationException("Page not initialized");
-        await Page.GotoAsync(BaseUrl);
+            await Page.GotoAsync(BaseUrl);
             await Expect(Page.Locator(".pet-container")).ToBeVisibleAsync();
         }
 
@@ -224,7 +224,7 @@ public class TankBattleGameTests : BaseE2ETest
         {
             // If no navigation menu, use direct navigation
             if (Page == null) throw new InvalidOperationException("Page not initialized");
-        await Page.GotoAsync($"{BaseUrl}/tanks");
+            await Page.GotoAsync($"{BaseUrl}/tanks");
             await Expect(Page.Locator(".tank-game-container")).ToBeVisibleAsync();
         }
     }

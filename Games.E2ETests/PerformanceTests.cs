@@ -1,5 +1,6 @@
 using Microsoft.Playwright;
 using Microsoft.Playwright.MSTest;
+using static Microsoft.Playwright.Assertions;
 
 namespace Games.E2ETests;
 

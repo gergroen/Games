@@ -4,7 +4,7 @@ using static Microsoft.Playwright.Assertions;
 namespace Games.E2ETests;
 
 [TestClass]
-public abstract class BaseE2ETest 
+public abstract class BaseE2ETest
 {
     protected const string BaseUrl = "http://localhost:5080";
     protected static IPlaywright? PlaywrightInstance;
@@ -102,7 +102,7 @@ public abstract class BaseE2ETest
             Args = new[]
             {
                 "--no-sandbox",
-                "--disable-setuid-sandbox", 
+                "--disable-setuid-sandbox",
                 "--disable-dev-shm-usage",
                 "--disable-gpu",
                 "--disable-web-security",
