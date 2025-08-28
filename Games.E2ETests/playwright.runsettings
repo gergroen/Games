@@ -4,11 +4,16 @@
     <BrowserName>chromium</BrowserName>
     <LaunchOptions>
       <Headless>true</Headless>
+      <ExecutablePath>/usr/bin/google-chrome</ExecutablePath>
       <Args>
         <string>--no-sandbox</string>
         <string>--disable-setuid-sandbox</string>
         <string>--disable-dev-shm-usage</string>
         <string>--disable-gpu</string>
+        <string>--disable-web-security</string>
+        <string>--disable-background-timer-throttling</string>
+        <string>--disable-backgrounding-occluded-windows</string>
+        <string>--disable-renderer-backgrounding</string>
       </Args>
     </LaunchOptions>
     <BrowserNewContextOptions>

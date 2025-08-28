@@ -1,5 +1,5 @@
 using Microsoft.Playwright;
-using Microsoft.Playwright.MSTest;
+using static Microsoft.Playwright.Assertions;
 
 namespace Games.E2ETests;
 
@@ -12,6 +12,7 @@ public class TankBattleGameTests : BaseE2ETest
     public async Task NavigateToTanks_ShouldDisplayBattlefield()
     {
         // Navigate to the Tank Battle page
+        if (Page == null) throw new InvalidOperationException("Page not initialized");
         await Page.GotoAsync($"{BaseUrl}/tanks");
 
         // Wait for Blazor to fully load
@@ -32,6 +33,7 @@ public class TankBattleGameTests : BaseE2ETest
     [TestMethod]
     public async Task HUD_ShouldDisplayPlayerAndEnemyHP()
     {
+        if (Page == null) throw new InvalidOperationException("Page not initialized");
         await Page.GotoAsync($"{BaseUrl}/tanks");
 
         // Wait for the game to load
@@ -49,6 +51,7 @@ public class TankBattleGameTests : BaseE2ETest
     [TestMethod]
     public async Task FireButton_ShouldBeClickableAndDisplayCorrectText()
     {
+        if (Page == null) throw new InvalidOperationException("Page not initialized");
         await Page.GotoAsync($"{BaseUrl}/tanks");
 
         // Wait for the game to load
@@ -73,6 +76,7 @@ public class TankBattleGameTests : BaseE2ETest
     [TestMethod]
     public async Task AutoToggleButton_ShouldToggleBetweenAutoOnAndOff()
     {
+        if (Page == null) throw new InvalidOperationException("Page not initialized");
         await Page.GotoAsync($"{BaseUrl}/tanks");
 
         // Wait for the game to load
@@ -93,6 +97,7 @@ public class TankBattleGameTests : BaseE2ETest
     [TestMethod]
     public async Task RestartButton_ShouldResetGame()
     {
+        if (Page == null) throw new InvalidOperationException("Page not initialized");
         await Page.GotoAsync($"{BaseUrl}/tanks");
 
         // Wait for the game to load
@@ -118,6 +123,7 @@ public class TankBattleGameTests : BaseE2ETest
     [TestMethod]
     public async Task FullscreenButton_ShouldBePresent()
     {
+        if (Page == null) throw new InvalidOperationException("Page not initialized");
         await Page.GotoAsync($"{BaseUrl}/tanks");
 
         // Wait for the game to load
@@ -139,6 +145,8 @@ public class TankBattleGameTests : BaseE2ETest
     [TestMethod]
     public async Task VirtualJoysticks_ShouldBeVisibleOnMobileViewport()
     {
+        if (Page == null) throw new InvalidOperationException("Page not initialized");
+        
         // Set mobile viewport
         await Page.SetViewportSizeAsync(375, 667);
         await Page.GotoAsync($"{BaseUrl}/tanks");
@@ -160,6 +168,7 @@ public class TankBattleGameTests : BaseE2ETest
     [TestMethod]
     public async Task CanvasRendering_ShouldBeSmooth()
     {
+        if (Page == null) throw new InvalidOperationException("Page not initialized");
         await Page.GotoAsync($"{BaseUrl}/tanks");
 
         // Wait for the game to load
@@ -185,6 +194,7 @@ public class TankBattleGameTests : BaseE2ETest
     public async Task Navigation_ShouldWorkBetweenGames()
     {
         // Start at tanks page
+        if (Page == null) throw new InvalidOperationException("Page not initialized");
         await Page.GotoAsync($"{BaseUrl}/tanks");
         await Expect(Page.Locator(".tank-game-container")).ToBeVisibleAsync();
 
@@ -198,7 +208,8 @@ public class TankBattleGameTests : BaseE2ETest
         else
         {
             // If no navigation menu, use direct navigation
-            await Page.GotoAsync(BaseUrl);
+            if (Page == null) throw new InvalidOperationException("Page not initialized");
+        await Page.GotoAsync(BaseUrl);
             await Expect(Page.Locator(".pet-container")).ToBeVisibleAsync();
         }
 
@@ -212,7 +223,8 @@ public class TankBattleGameTests : BaseE2ETest
         else
         {
             // If no navigation menu, use direct navigation
-            await Page.GotoAsync($"{BaseUrl}/tanks");
+            if (Page == null) throw new InvalidOperationException("Page not initialized");
+        await Page.GotoAsync($"{BaseUrl}/tanks");
             await Expect(Page.Locator(".tank-game-container")).ToBeVisibleAsync();
         }
     }

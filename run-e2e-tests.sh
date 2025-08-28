@@ -155,30 +155,164 @@ install_playwright_browsers() {
     
     cd "$E2E_PROJECT"
     
-    # Try multiple installation strategies
-    local strategies=(
-        "pwsh bin/Debug/net9.0/playwright.ps1 install --with-deps"
-        "pwsh bin/Debug/net9.0/playwright.ps1 install chromium"
-        "dotnet tool install --global Microsoft.Playwright.CLI && playwright install chromium"
-    )
+    # Create a fallback browsers directory for offline scenarios
+    mkdir -p browsers
+    
+    # Check if browsers are already installed and working
+    if verify_browser_installation; then
+        log_success "Playwright browsers are already installed and working"
+        cd ..
+        return 0
+    fi
+    
+    # Check if PowerShell is available
+    local has_pwsh=false
+    if command -v pwsh &> /dev/null; then
+        has_pwsh=true
+        log_verbose "PowerShell Core found"
+    fi
+    
+    # Try multiple installation strategies in order of preference
+    local strategies=()
+    
+    # Strategy 1: Use system Chrome/Chromium if available (fastest fallback)
+    if command -v google-chrome &> /dev/null; then
+        log_info "System Chrome detected, configuring Playwright to use system browser..."
+        export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
+        strategies+=("echo 'Using system Chrome' && which google-chrome")
+    elif command -v chromium-browser &> /dev/null; then
+        log_info "System Chromium detected, configuring Playwright to use system browser..."
+        export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
+        strategies+=("echo 'Using system Chromium' && which chromium-browser")
+    fi
+    
+    # Strategy 2: Install system Chrome as fallback
+    if [ -z "$PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD" ]; then
+        strategies+=("install_system_chrome")
+    fi
+    
+    # Strategy 3: Direct PowerShell script (most reliable when network works)
+    if [ "$has_pwsh" = true ] && [ -z "$PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD" ]; then
+        strategies+=("pwsh bin/Debug/net9.0/playwright.ps1 install chromium")
+        strategies+=("PLAYWRIGHT_BROWSERS_PATH=./browsers pwsh bin/Debug/net9.0/playwright.ps1 install chromium")
+    fi
+    
+    # Strategy 4: Global Playwright CLI tool
+    if [ -z "$PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD" ]; then
+        strategies+=("install_via_global_cli")
+    fi
+    
+    # Strategy 5: Direct execution via dotnet
+    if [ -z "$PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD" ]; then
+        strategies+=("PLAYWRIGHT_BROWSERS_PATH=./browsers dotnet exec bin/Debug/net9.0/Microsoft.Playwright.dll install chromium")
+    fi
     
     for strategy in "${strategies[@]}"; do
         log_verbose "Trying: $strategy"
         
-        # Use timeout to prevent hanging
-        if timeout $MAX_BROWSER_INSTALL_WAIT bash -c "$strategy" > playwright-install.log 2>&1; then
-            log_success "Playwright browsers installed successfully"
-            cd ..
-            return 0
+        # Handle special functions vs direct commands
+        if [[ "$strategy" == "install_system_chrome" ]]; then
+            if install_system_chrome; then
+                if verify_browser_installation; then
+                    log_success "System Chrome installed and verified successfully"
+                    cd ..
+                    return 0
+                fi
+            fi
+        elif [[ "$strategy" == "install_via_global_cli" ]]; then
+            if install_via_global_cli; then
+                if verify_browser_installation; then
+                    log_success "Playwright browsers installed via global CLI"
+                    cd ..
+                    return 0
+                fi
+            fi
         else
-            log_warning "Installation strategy failed: $strategy"
-            log_verbose "Check playwright-install.log for details"
+            # Use timeout to prevent hanging and capture both stdout and stderr
+            if timeout $MAX_BROWSER_INSTALL_WAIT bash -c "$strategy" > playwright-install.log 2>&1; then
+                # Verify installation by checking if browsers were actually installed
+                if verify_browser_installation; then
+                    log_success "Playwright browsers installed and verified successfully"
+                    cd ..
+                    return 0
+                else
+                    log_warning "Installation command succeeded but browsers not properly installed"
+                    log_verbose "Check playwright-install.log for details"
+                fi
+            else
+                log_warning "Installation strategy failed: $strategy"
+                log_verbose "Check playwright-install.log for details"
+            fi
         fi
     done
     
     log_error "All Playwright browser installation strategies failed"
     log_info "Will run smoke tests only"
     cd ..
+    return 1
+}
+
+# Function to install system Chrome as fallback
+install_system_chrome() {
+    log_info "Installing system Chrome as fallback..."
+    
+    # Download and install Chrome
+    if wget -q -O - https://dl.google.com/linux/linux_signing_key.pub 2>/dev/null | apt-key add - 2>/dev/null && \
+       echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list 2>/dev/null && \
+       apt-get update -qq 2>/dev/null && \
+       apt-get install -y google-chrome-stable 2>/dev/null; then
+        export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
+        log_success "System Chrome installed successfully"
+        return 0
+    else
+        log_warning "System Chrome installation failed"
+        return 1
+    fi
+}
+
+# Function to install via global CLI
+install_via_global_cli() {
+    log_info "Installing via global Playwright CLI..."
+    
+    if dotnet tool install --global Microsoft.Playwright.CLI > /dev/null 2>&1; then
+        export PATH="$PATH:$HOME/.dotnet/tools"
+        if playwright install chromium > playwright-install.log 2>&1; then
+            return 0
+        fi
+    fi
+    return 1
+}
+
+# Function to verify browser installation
+verify_browser_installation() {
+    log_verbose "Verifying browser installation..."
+    
+    # If using system browser, verify system browser is available
+    if [ "$PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD" = "1" ]; then
+        if command -v google-chrome &> /dev/null || command -v chromium-browser &> /dev/null; then
+            log_verbose "System browser verified and available"
+            return 0
+        fi
+    fi
+    
+    # Check common browser locations for downloaded browsers
+    local browser_paths=(
+        "$HOME/.cache/ms-playwright/chromium-*/chrome-linux/chrome"
+        "$HOME/.cache/ms-playwright/chromium-*/chrome-mac/Chromium.app/Contents/MacOS/Chromium"
+        "$HOME/.cache/ms-playwright/chromium-*/chrome-win/chrome.exe"
+        "./browsers/chromium-*/chrome-linux/chrome"
+        "./browsers/chromium-*/chrome-mac/Chromium.app/Contents/MacOS/Chromium"
+        "$PWD/.playwright/node/*/node_modules/playwright-core/.local-browsers/chromium-*/chrome-linux/chrome"
+    )
+    
+    for path in "${browser_paths[@]}"; do
+        if ls $path &> /dev/null; then
+            log_verbose "Found browser at: $path"
+            return 0
+        fi
+    done
+    
+    log_verbose "Browser verification failed - no browsers found in expected locations"
     return 1
 }
 
@@ -198,6 +332,11 @@ run_smoke_tests() {
 # Function to run full E2E tests
 run_full_e2e_tests() {
     log_info "Running full E2E tests (including browser tests)..."
+    
+    # Set environment variables to force system browser usage
+    export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
+    export PLAYWRIGHT_BROWSERS_PATH=/usr/bin
+    export PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/google-chrome
     
     if dotnet test "$E2E_PROJECT" --logger "console;verbosity=minimal" --no-build; then
         log_success "All E2E tests passed"
