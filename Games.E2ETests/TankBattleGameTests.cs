@@ -51,8 +51,8 @@ public class TankBattleGameTests : BaseE2ETest
     {
         await Page.GotoAsync($"{BaseUrl}/tanks");
 
-        // Wait for the game to load
-        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+        // Wait for Blazor and the game to load completely
+        await WaitForBlazorToLoad();
 
         // Ensure tank game container is loaded first
         var tankContainer = Page.Locator(".tank-game-container");
@@ -75,8 +75,8 @@ public class TankBattleGameTests : BaseE2ETest
     {
         await Page.GotoAsync($"{BaseUrl}/tanks");
 
-        // Wait for the game to load
-        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+        // Wait for Blazor and the game to load completely
+        await WaitForBlazorToLoad();
 
         // Find the Auto toggle button (should start as "AUTO OFF")
         var autoButton = Page.Locator("button:has-text('AUTO')");
@@ -95,8 +95,8 @@ public class TankBattleGameTests : BaseE2ETest
     {
         await Page.GotoAsync($"{BaseUrl}/tanks");
 
-        // Wait for the game to load
-        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+        // Wait for Blazor and the game to load completely
+        await WaitForBlazorToLoad();
 
         // Wait for the tank game container to be visible first
         var tankContainer = Page.Locator(".tank-game-container");
@@ -120,8 +120,8 @@ public class TankBattleGameTests : BaseE2ETest
     {
         await Page.GotoAsync($"{BaseUrl}/tanks");
 
-        // Wait for the game to load
-        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+        // Wait for Blazor and the game to load completely
+        await WaitForBlazorToLoad();
 
         // Wait for the tank game container to be visible first
         var tankContainer = Page.Locator(".tank-game-container");
@@ -143,8 +143,8 @@ public class TankBattleGameTests : BaseE2ETest
         await Page.SetViewportSizeAsync(375, 667);
         await Page.GotoAsync($"{BaseUrl}/tanks");
 
-        // Wait for the game to load
-        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+        // Wait for Blazor and the game to load completely
+        await WaitForBlazorToLoad();
 
         // Verify the tank game container is still visible
         await Expect(Page.Locator(".tank-game-container")).ToBeVisibleAsync();
@@ -162,8 +162,8 @@ public class TankBattleGameTests : BaseE2ETest
     {
         await Page.GotoAsync($"{BaseUrl}/tanks");
 
-        // Wait for the game to load
-        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+        // Wait for Blazor and the game to load completely
+        await WaitForBlazorToLoad();
 
         // Verify canvas has proper dimensions
         var canvas = Page.Locator("#tankCanvas");

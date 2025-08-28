@@ -40,8 +40,8 @@ public class TamagotchiGameTests : BaseE2ETest
     {
         await Page.GotoAsync(BaseUrl);
 
-        // Wait for the page to fully load
-        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+        // Wait for Blazor and the page to fully load
+        await WaitForBlazorToLoad();
 
         // Ensure pet container is loaded first
         var petContainer = Page.Locator(".pet-container");
@@ -98,8 +98,8 @@ public class TamagotchiGameTests : BaseE2ETest
     {
         await Page.GotoAsync(BaseUrl);
 
-        // Wait for the page to fully load
-        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+        // Wait for Blazor and the page to fully load
+        await WaitForBlazorToLoad();
 
         // Wait for the pet container to be visible first (ensures Blazor has rendered)
         var petContainer = Page.Locator(".pet-container");
