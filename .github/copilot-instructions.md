@@ -40,7 +40,11 @@ For urgent fixes or small changes:
 - **Format code**: `dotnet format` -- takes 5-10 seconds. NEVER CANCEL. Set timeout to 30+ seconds.
 - **Verify formatting**: `dotnet format --verify-no-changes` -- takes 2-3 seconds. Must pass before committing.
 - **REQUIRED**: All code must pass formatting before any commit
-- No unit tests exist in this project (games are interaction-heavy and tested manually).
+- **E2E Testing**: Comprehensive end-to-end tests available in `Games.E2ETests/` (38 tests total)
+  - Run smoke tests: `dotnet test Games.E2ETests --filter "TestCategory!=RequiresBrowser"`
+  - Run all tests: `dotnet test Games.E2ETests` (requires Playwright browsers)
+  - Tests cover: Game functionality, accessibility, PWA features, performance
+- **Manual Testing**: Games are interaction-heavy, so manual validation is still required for full verification
 - Code style: C# conventions with implicit usings enabled, nullable reference types enabled
 
 ## Validation Scenarios

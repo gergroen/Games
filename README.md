@@ -196,9 +196,22 @@ The application is automatically deployed to Azure Static Web Apps on every push
 
 - **Minimal Changes**: Make the smallest possible changes to achieve your goal
 - **Testing**: Manually validate both games after making changes
+- **Automated Testing**: Run E2E tests to ensure no regressions (`dotnet test Games.E2ETests`)
 - **Performance**: Maintain smooth 60fps gameplay
 - **Accessibility**: Ensure keyboard navigation works properly
 - **Mobile**: Test touch controls on mobile devices
+- **Code Quality**: Run `dotnet format` before committing changes
+
+#### Test Development Guidelines
+
+When adding new features, ensure they include appropriate tests:
+
+1. **Add E2E tests** for user-facing functionality in `Games.E2ETests/`
+2. **Follow naming convention**: `FeatureName_ShouldExpectedBehavior`
+3. **Mark browser tests** with `[TestCategory("RequiresBrowser")]`
+4. **Include accessibility testing** for interactive elements
+5. **Test mobile viewports** for responsive features
+6. **Update documentation** in README files when adding new test classes
 
 ## 🧪 Testing
 
