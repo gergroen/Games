@@ -14,6 +14,9 @@ This project contains comprehensive end-to-end tests for both the Tamagotchi and
 ### Browser-Dependent E2E Tests
 - **TamagotchiGameTests.cs**: 7 comprehensive tests for the virtual pet game
 - **TankBattleGameTests.cs**: 9 comprehensive tests for the tank battle game
+- **AccessibilityTests.cs**: 6 tests for keyboard navigation, ARIA labels, and screen reader support
+- **PWATests.cs**: 5 tests for Progressive Web App features (manifest, service worker, offline support)
+- **PerformanceTests.cs**: 6 tests for load times, responsiveness, and resource optimization
 
 All browser tests are marked with `[TestCategory("RequiresBrowser")]` to allow selective execution.
 
@@ -172,16 +175,13 @@ The E2E test suite validates both games included in the application:
 - **VirtualJoysticks_ShouldBeVisibleOnMobileViewport** - Tests mobile virtual joysticks
 - **CanvasRendering_ShouldBeSmooth** - Validates canvas rendering performance
 - **Navigation_ShouldWorkBetweenGames** - Tests cross-game navigation
-
 ## Prerequisites
 
 1. **.NET 9.0 SDK** - Required for running the tests
 2. **Playwright Browsers** - Must be installed before running tests
 3. **Running Application** - The Games application must be running on `http://localhost:5080`
 
-## Setup Instructions
-
-### 1. Install .NET 9.0 SDK
+### Install .NET 9.0 SDK
 ```bash
 # Linux/macOS
 wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh
@@ -193,22 +193,7 @@ export PATH="$HOME/.dotnet:$PATH"
 # Download from https://dotnet.microsoft.com/download/dotnet/9.0
 ```
 
-### 2. Build the Test Project
-```bash
-cd Games.E2ETests
-dotnet build
-```
-
-### 3. Install Playwright Browsers
-```bash
-# From the Games.E2ETests directory
-pwsh bin/Debug/net9.0/playwright.ps1 install
-
-# Alternative using PowerShell on Windows
-.\bin\Debug\net9.0\playwright.ps1 install
-```
-
-### 4. Start the Games Application
+### Start the Games Application
 ```bash
 # From the Games directory
 dotnet run --project Games
@@ -217,59 +202,97 @@ The application should be running on `http://localhost:5080`
 
 ## Running Tests
 
-### Run All Tests
+### Setup (First Time)
 ```bash
-dotnet test Games.E2ETests
+# Build the test project
+cd Games.E2ETests
+dotnet build
+
+# Install Playwright browsers
+pwsh bin/Debug/net9.0/playwright.ps1 install --with-deps
 ```
 
-### Run Specific Test Class
+### Run Tests
+
+**Run smoke tests only (no browser required):**
 ```bash
-dotnet test Games.E2ETests --filter "ClassName=TamagotchiGameTests"
-dotnet test Games.E2ETests --filter "ClassName=TankBattleGameTests"
+dotnet test --filter "TestCategory!=RequiresBrowser" --logger "console;verbosity=detailed"
 ```
 
-### Run with Detailed Output
+**Run all tests (requires Playwright browsers):**
 ```bash
-dotnet test Games.E2ETests --logger "console;verbosity=detailed"
+dotnet test --logger "console;verbosity=detailed"
 ```
 
-### Run with Custom Settings
+**Run specific test classes:**
 ```bash
-dotnet test Games.E2ETests --settings playwright.runsettings
+dotnet test --filter "ClassName=TamagotchiGameTests"
+dotnet test --filter "ClassName=TankBattleGameTests"
 ```
 
-## Test Configuration
+## Test Coverage
 
-The tests are configured to:
-- Run against `http://localhost:5080` (update `BaseUrl` constant if needed)
-- Use Chromium browser in headless mode
-- Support both desktop and mobile viewport testing
-- Validate responsive design and accessibility features
+### Tamagotchi Game Tests (7 Tests)
+- **NavigateToTamagotchi_ShouldDisplayPetWithStats** - Verifies pet displays with hunger, happiness, energy, and mood stats
+- **FeedButton_ShouldBeClickableAndDisplayCorrectText** - Tests Feed (A) button functionality
+- **PlayButton_ShouldBeClickableAndDisplayCorrectText** - Tests Play (B) button functionality  
+- **RestButton_ShouldBeClickableAndDisplayCorrectText** - Tests Rest (X) button functionality
+- **GamepadConnectionStatus_ShouldBeDisplayed** - Verifies gamepad connection status display
+- **ResponsiveDesign_ShouldAdaptToMobileViewport** - Tests mobile responsive design
+- **KeyboardNavigation_ShouldWorkWithTabAndEnter** - Validates keyboard accessibility
 
-## Troubleshooting
+### Tank Battle Game Tests (9 Tests)
+- **NavigateToTanks_ShouldDisplayBattlefield** - Verifies battlefield and canvas rendering
+- **HUD_ShouldDisplayPlayerAndEnemyHP** - Tests HUD HP display functionality
+- **FireButton_ShouldBeClickableAndDisplayCorrectText** - Tests Fire button functionality
+- **AutoToggleButton_ShouldToggleBetweenAutoOnAndOff** - Tests Auto toggle functionality
+- **RestartButton_ShouldResetGame** - Tests Restart button functionality
+- **FullscreenButton_ShouldBePresent** - Verifies Fullscreen button presence
+- **VirtualJoysticks_ShouldBeVisibleOnMobileViewport** - Tests mobile virtual joysticks
+- **CanvasRendering_ShouldBeSmooth** - Validates canvas rendering performance
+- **Navigation_ShouldWorkBetweenGames** - Tests cross-game navigation
 
-### Browser Installation Issues
-If browser installation fails:
-```bash
-# Try installing specific browser
-pwsh bin/Debug/net9.0/playwright.ps1 install chromium
+### Smoke Tests (4 Tests)
+- **Application_ShouldRespond** - Basic application availability
+- **Application_ShouldServeIndexPage** - Index page routing functionality
+- **TanksPage_ShouldBeAccessible** - Tank page routing functionality
+- **StaticAssets_ShouldBeAccessible** - Static asset serving validation
 
-# Or with dependencies
-pwsh bin/Debug/net9.0/playwright.ps1 install chromium --with-deps
-```
+### Accessibility Tests (6 Tests)
+- **TamagotchiGame_ShouldHaveAccessibleElements** - ARIA labels and keyboard navigation for pet game
+- **TankGame_ShouldHaveAccessibleControls** - Accessibility of tank game controls
+- **ColorContrast_ShouldBeAccessible** - Basic color contrast validation
+- **ScreenReader_ShouldFindAppropriateLabels** - Proper heading structure and labels
+- **Navigation_ShouldBeKeyboardAccessible** - Keyboard navigation through interface
+- **FocusIndicators_ShouldBeVisible** - Visual focus indicators for keyboard users
 
-### Application Not Running
-Ensure the Games application is running before executing tests:
-```bash
-curl http://localhost:5080
-```
+### PWA Tests (5 Tests)
+- **Manifest_ShouldBeAccessible** - Web App Manifest validation and accessibility
+- **ServiceWorker_ShouldBeRegistered** - Service Worker registration verification
+- **AppIcons_ShouldBeAccessible** - App icon and favicon accessibility
+- **OfflineSupport_ShouldShowAppropriateMessage** - Offline functionality testing
+- **InstallPrompt_ShouldBeAvailable** - PWA installability criteria validation
 
-### Test Failures
-Common issues:
-- **Application not started** - Start with `dotnet run --project Games`
-- **Browsers not installed** - Run the Playwright install command
-- **Port conflicts** - Ensure port 5080 is available
-- **Network timeouts** - Increase timeout values in test methods if needed
+### Performance Tests (6 Tests)
+- **ApplicationLoad_ShouldBeFast** - Application load time measurement
+- **GameInteractions_ShouldBeResponsive** - Game interaction response time testing
+- **TankCanvas_ShouldRenderSmoothly** - Canvas rendering performance validation
+- **MemoryUsage_ShouldNotLeak** - Memory leak detection during gameplay
+- **ResourceSizes_ShouldBeOptimized** - Resource size optimization verification
+- **NetworkRequests_ShouldBeMinimal** - Network request count and size monitoring
+
+## CI/CD Integration
+
+The GitHub Actions workflow automatically:
+
+1. **Installs dependencies** and builds the application
+2. **Attempts Playwright browser installation** with retry logic
+3. **Runs smoke tests first** (always works, no browser required)
+4. **Conditionally runs full E2E tests** if browsers are available
+5. **Continues deployment** even if some tests fail
+6. **Uploads test results** as artifacts for review
+
+This ensures deployment isn't blocked by browser installation issues while still providing comprehensive testing when possible.
 
 ## Test Architecture
 
@@ -285,10 +308,45 @@ Each test follows the pattern:
 3. Perform user interactions (clicks, input, etc.)
 4. Assert the application responds correctly
 
+The test design prioritizes reliability and flexibility:
+- **Graceful degradation**: Tests run at multiple levels (smoke → browser)
+- **Selective execution**: Tests can be filtered by category
+- **Retry mechanisms**: Browser installation has multiple fallback strategies
+- **Result preservation**: Test results are uploaded regardless of outcome
+
+## Troubleshooting
+
+### Browser Installation Issues
+If browser installation fails:
+```bash
+# Try installing specific browser
+pwsh bin/Debug/net9.0/playwright.ps1 install chromium --with-deps
+
+# Alternative installation method
+dotnet tool install --global Microsoft.Playwright.CLI
+```
+
+### Common Issues
+- **Application not running**: Ensure `dotnet run --project Games` is active on port 5080
+- **Browser tests failing**: Verify Playwright browsers are installed
+- **Port conflicts**: Ensure port 5080 is available (`curl http://localhost:5080`)
+- **Timeout errors**: Increase test timeout values for slow environments
+- **Network timeouts**: Increase timeout values in test methods if needed
+
+### Verification Commands
+```bash
+# Check if application is running
+curl http://localhost:5080
+
+# Verify browser installation
+pwsh bin/Debug/net9.0/playwright.ps1 install --dry-run
+```
+
 ## Contributing
 
 When adding new tests:
 1. Follow the existing naming convention: `FeatureName_ShouldExpectedBehavior`
 2. Include appropriate assertions for UI elements and functionality
 3. Add mobile viewport testing where relevant
-4. Update this README with new test descriptions
+4. Mark browser tests with `[TestCategory("RequiresBrowser")]`
+5. Update this README with new test descriptions
