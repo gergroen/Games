@@ -200,3 +200,6 @@ __pycache__/
 
 # Windows thumbnail cache files
 Thumbs.db
+games-app.pid
+games-app.log
+playwright-install.log
