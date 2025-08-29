@@ -95,10 +95,11 @@ window.tankGame = (function(){
       requestAnimationFrame(_frameFn);
     }
   }
-  function draw(player, enemy, projectiles, cameraX, cameraY){
+  function draw(player, enemy, projectiles, cameraX, cameraY, powerUps){
     if(!ctx) return;
     cameraX = cameraX || 0;
     cameraY = cameraY || 0;
+    powerUps = powerUps || [];
     
     ctx.clearRect(0,0,canvas.width,canvas.height);
     ctx.strokeStyle='#333';
@@ -127,6 +128,9 @@ window.tankGame = (function(){
       }
     }
     
+    // Draw power-ups before tanks so they appear behind
+    drawPowerUps(powerUps, cameraX, cameraY);
+    
     drawTank(player,'#228B22','#90ff90', cameraX, cameraY);
     if(Array.isArray(enemy)){
       enemy.forEach(e=>{ if(e.hp>0 || e.Hp>0) drawTank(e,'#ff4c4c','#ff9090', cameraX, cameraY); });
@@ -146,10 +150,10 @@ window.tankGame = (function(){
     drawExplosions(cameraX, cameraY);
     
     // Draw radar
-    drawRadar(player, enemy, cameraX, cameraY);
+    drawRadar(player, enemy, cameraX, cameraY, powerUps);
   }
   
-  function drawRadar(player, enemy, cameraX, cameraY) {
+  function drawRadar(player, enemy, cameraX, cameraY, powerUps) {
     if (!radarCtx || !radarCanvas) return;
     
     // World dimensions (from BattlefieldService)
@@ -181,6 +185,25 @@ window.tankGame = (function(){
     radarCtx.strokeStyle = '#666';
     radarCtx.lineWidth = 1;
     radarCtx.strokeRect(viewportX, viewportY, viewportWidth, viewportHeight);
+    
+    // Draw power-ups (all yellow diamonds)
+    if (powerUps && Array.isArray(powerUps)) {
+      powerUps.forEach(powerUp => {
+        const powerUpX = powerUp.x * scaleX;
+        const powerUpY = powerUp.y * scaleY;
+        
+        // All power-ups are yellow on radar
+        radarCtx.fillStyle = '#FFFF22';
+        
+        // Draw power-up as a small diamond
+        const size = 2;
+        radarCtx.save();
+        radarCtx.translate(powerUpX, powerUpY);
+        radarCtx.rotate(Math.PI / 4); // 45 degree rotation for diamond
+        radarCtx.fillRect(-size, -size, size * 2, size * 2);
+        radarCtx.restore();
+      });
+    }
     
     // Draw player position (green dot)
     if (player && (player.hp > 0 || player.Hp > 0 || player.hp === undefined)) {
@@ -321,6 +344,63 @@ window.tankGame = (function(){
       ctx.arc(screenX, screenY, r*0.45, 0, Math.PI*2);
       ctx.fill();
     }
+  }
+  function drawPowerUps(powerUps, cameraX, cameraY) {
+    if (!powerUps || !Array.isArray(powerUps)) return;
+    
+    cameraX = cameraX || 0;
+    cameraY = cameraY || 0;
+    
+    powerUps.forEach(powerUp => {
+      const screenX = powerUp.x - cameraX;
+      const screenY = powerUp.y - cameraY;
+      
+      // Only draw if power-up is visible on screen
+      if (screenX < -30 || screenX > canvas.width + 30 || screenY < -30 || screenY > canvas.height + 30) {
+        return;
+      }
+      
+      // Pulsing effect based on time
+      const time = performance.now() / 1000;
+      const pulse = 0.8 + 0.2 * Math.sin(time * 3);
+      const size = 12 * pulse;
+      
+      ctx.save();
+      ctx.translate(screenX, screenY);
+      
+      // Draw power-up based on type (all yellow)
+      ctx.fillStyle = '#FFFF22';
+      ctx.strokeStyle = '#AAAA00';
+      
+      // Draw diamond shape
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, -size);
+      ctx.lineTo(size, 0);
+      ctx.lineTo(0, size);
+      ctx.lineTo(-size, 0);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      
+      // Draw inner symbol
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = '12px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      
+      let symbol = '?';
+      switch (powerUp.type) {
+        case 0: symbol = '❤️'; break; // Health
+        case 1: symbol = '🛡'; break; // Shield  
+        case 2: symbol = '🔫'; break; // FirePower
+        case 3: symbol = '⚡️'; break; // Speed
+      }
+      
+      ctx.fillText(symbol, 0, 0);
+      
+      ctx.restore();
+    });
   }
   let musicNodes=[];
   function stopMusic(){ musicNodes.forEach(n=>{try{n.stop();}catch{} }); musicNodes=[]; }

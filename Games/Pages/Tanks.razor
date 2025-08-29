@@ -4,6 +4,18 @@
 <div id="tankGameContainer" class="tank-game-container">
     <div class="hud-hp">
         Player HP: @Battlefield.Player.Hp | Enemies Remaining: @Battlefield.EnemiesRemaining
+        @if (Battlefield.Player.ShieldTime > 0)
+        {
+            <span class="badge bg-primary ms-2">🛡️ @((int)Battlefield.Player.ShieldTime)s</span>
+        }
+        @if (Battlefield.Player.FirePowerTime > 0)
+        {
+            <span class="badge bg-danger ms-2">🔫 @((int)Battlefield.Player.FirePowerTime)s</span>
+        }
+        @if (Battlefield.Player.SpeedBoostTime > 0)
+        {
+            <span class="badge bg-warning ms-2">⚡️ @((int)Battlefield.Player.SpeedBoostTime)s</span>
+        }
         <button class="btn btn-sm btn-primary ms-2 btn-icon" @onclick="Restart" title="Restart"
             aria-label="Restart">&#x21bb;</button>
         <button class="btn btn-sm btn-secondary ms-2 btn-icon" @onclick="ToggleFullscreen" title="Fullscreen"
