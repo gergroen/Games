@@ -31,7 +31,7 @@ public class TankBattleGameTests : BaseE2ETest
     }
 
     [TestMethod]
-    public async Task HUD_ShouldDisplayPlayerAndEnemyHP()
+    public async Task HUD_ShouldDisplayPlayerHPAndEnemiesRemaining()
     {
         if (Page == null) throw new InvalidOperationException("Page not initialized");
         await Page.GotoAsync($"{BaseUrl}/tanks");
@@ -39,13 +39,13 @@ public class TankBattleGameTests : BaseE2ETest
         // Wait for the game to load
         await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
 
-        // Verify HUD is visible with HP information
+        // Verify HUD is visible with game information
         var hud = Page.Locator(".hud-hp");
         await Expect(hud).ToBeVisibleAsync();
 
-        // Verify HP displays are present (they should show player and enemy HP)
+        // Verify displays are present (player HP and enemies remaining count)
         await Expect(Page.Locator("text=/Player.*HP/")).ToBeVisibleAsync();
-        await Expect(Page.Locator("text=/Enemy.*HP/")).ToBeVisibleAsync();
+        await Expect(Page.Locator("text=/Enemies.*Remaining/")).ToBeVisibleAsync();
     }
 
     [TestMethod]

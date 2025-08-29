@@ -47,24 +47,50 @@ public class BattlefieldService
 
     public void SpawnTeams()
     {
-        // Player vs single enemy mode (no allies)
+        // Player vs 5 enemies mode (no allies)
         Allies.Clear();
         Enemies.Clear();
         Player = new PlayerTank { Id = 0, Team = Team.Player, X = 200, Y = WorldHeight / 2.0, BarrelAngle = 0 };
 
-        Enemies.Add(new EnemyTank
+        // Available enemy behaviors for variety
+        var behaviors = new[] { EnemyBehavior.Aggressive, EnemyBehavior.Shy, EnemyBehavior.Circler, EnemyBehavior.Sniper, EnemyBehavior.Wanderer, EnemyBehavior.Flanker };
+
+        // Spawn 5 enemies at random positions
+        for (int i = 0; i < 5; i++)
         {
-            Id = 100,
-            Team = Team.Enemy,
-            X = WorldWidth - 200,
-            Y = WorldHeight / 2.0,
-            Angle = Math.PI, // Face left initially
-            BarrelAngle = Math.PI, // Barrel also faces left initially
-            Behavior = EnemyBehavior.Aggressive,
-            StrafeDir = _rand.Next(0, 2) == 0 ? -1 : 1,
-            NextFireTimer = 0.8 + _rand.NextDouble() * 0.6,
-            DecisionTimer = 0.6 + _rand.NextDouble() * 0.8
-        });
+            double x, y;
+            int attempts = 0;
+
+            // Find a position that's not too close to player or other enemies
+            do
+            {
+                x = _rand.NextDouble() * (WorldWidth - 400) + 200; // 200 margin from edges
+                y = _rand.NextDouble() * (WorldHeight - 400) + 200;
+                attempts++;
+            }
+            while (attempts < 20 && (
+                // Too close to player
+                Math.Sqrt((x - Player.X) * (x - Player.X) + (y - Player.Y) * (y - Player.Y)) < 300 ||
+                // Too close to existing enemies
+                Enemies.Any(e => Math.Sqrt((x - e.X) * (x - e.X) + (y - e.Y) * (y - e.Y)) < 150)
+            ));
+
+            var enemy = new EnemyTank
+            {
+                Id = 100 + i,
+                Team = Team.Enemy,
+                X = x,
+                Y = y,
+                Angle = _rand.NextDouble() * Math.PI * 2, // Random initial direction
+                BarrelAngle = _rand.NextDouble() * Math.PI * 2, // Random initial barrel direction
+                Behavior = behaviors[i % behaviors.Length], // Cycle through behaviors for variety
+                StrafeDir = _rand.Next(0, 2) == 0 ? -1 : 1,
+                NextFireTimer = 0.8 + _rand.NextDouble() * 0.6,
+                DecisionTimer = 0.6 + _rand.NextDouble() * 0.8
+            };
+
+            Enemies.Add(enemy);
+        }
 
         // Center camera on player initially
         CameraX = Math.Clamp(Player.X - GameWidth / 2.0, 0, WorldWidth - GameWidth);
@@ -240,7 +266,25 @@ public class BattlefieldService
         }
 
         enemy.X += moveVX * enemy.EffectiveSpeed * dt; enemy.Y += moveVY * enemy.EffectiveSpeed * dt; ClampToWorld(enemy);
-        enemy.NextFireTimer -= dt; if (enemy.NextFireTimer <= 0) { Fire(enemy); enemy.NextFireTimer = enemy.Behavior == EnemyBehavior.Sniper ? 1.3 + _rand.NextDouble() * 1.0 : 0.8 + _rand.NextDouble() * 0.7; }
+
+        // Only fire when enemy is within engagement range based on their behavior
+        bool inEngagementRange = enemy.Behavior switch
+        {
+            EnemyBehavior.Aggressive => dist <= 200,
+            EnemyBehavior.Shy => dist <= 260,
+            EnemyBehavior.Circler => dist <= 170,
+            EnemyBehavior.Sniper => dist <= 300,
+            EnemyBehavior.Wanderer => dist <= 150,
+            EnemyBehavior.Flanker => dist <= 200,
+            _ => false
+        };
+
+        enemy.NextFireTimer -= dt;
+        if (enemy.NextFireTimer <= 0 && inEngagementRange)
+        {
+            Fire(enemy);
+            enemy.NextFireTimer = enemy.Behavior == EnemyBehavior.Sniper ? 1.3 + _rand.NextDouble() * 1.0 : 0.8 + _rand.NextDouble() * 0.7;
+        }
     }
 
     public void Fire(Tank t)
