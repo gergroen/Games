@@ -3,7 +3,7 @@
 
 <div id="tankGameContainer" class="tank-game-container">
     <div class="hud-hp">
-        Player HP: @Battlefield.Player.Hp | Enemies Remaining: @Battlefield.EnemiesRemaining
+        Player HP: @Battlefield.Player.Hp | Level: @Battlefield.Player.Level | XP: @Battlefield.Player.Xp/@Battlefield.GetXpForNextLevel() | Enemies: @Battlefield.EnemiesRemaining
         @if (Battlefield.Player.ShieldTime > 0)
         {
             <span class="badge bg-primary ms-2">🛡️ @((int)Battlefield.Player.ShieldTime)s</span>
