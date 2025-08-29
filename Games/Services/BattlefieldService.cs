@@ -24,8 +24,11 @@ public class BattlefieldService
     public List<AllyTank> Allies { get; } = new();
     public List<EnemyTank> Enemies { get; } = new();
     public List<Projectile> Projectiles { get; } = new();
+    public List<PowerUp> PowerUps { get; } = new();
 
     private bool _canFire = true; private double _fireCooldown = 0;
+    private double _powerUpSpawnTimer = 0;
+    private int _nextPowerUpId = 1;
 
     public int EnemiesRemaining => Enemies.Count(e => e.Hp > 0);
     public int AlliesAlive => Allies.Count(a => a.Hp > 0);
@@ -33,7 +36,9 @@ public class BattlefieldService
     public void Reset()
     {
         Projectiles.Clear();
+        PowerUps.Clear();
         _canFire = true; _fireCooldown = 0;
+        _powerUpSpawnTimer = 0; _nextPowerUpId = 1;
         SpawnTeams();
     }
 
@@ -102,8 +107,11 @@ public class BattlefieldService
         HandleAllies(dt);
         HandleEnemies(dt);
         UpdateProjectiles(dt);
+        UpdatePowerUps(dt);
         CheckCollisions(onExplosion, onPlayerHit);
+        CheckPowerUpCollisions();
         ApplySeparation();
+        UpdatePlayerEffects(dt);
         _fireCooldown -= dt; if (_fireCooldown <= 0) _canFire = true;
     }
 
@@ -173,7 +181,7 @@ public class BattlefieldService
 
     public void TryFirePlayer(Action? onFire)
     {
-        if (_canFire) { Fire(Player); _canFire = false; _fireCooldown = 0.35; onFire?.Invoke(); }
+        if (_canFire) { Fire(Player); _canFire = false; _fireCooldown = Player.EffectiveFirCooldown; onFire?.Invoke(); }
     }
 
     private void HandleAllies(double dt)
@@ -308,7 +316,16 @@ public class BattlefieldService
         for (int i = Projectiles.Count - 1; i >= 0; i--)
         {
             var pr = Projectiles[i];
-            if (Player.Hp > 0 && pr.OwnerTeam != Player.Team && Hit(pr, Player)) { Player.Hp -= 10; onExplosion?.Invoke(pr); onPlayerHit?.Invoke(); Projectiles.RemoveAt(i); continue; }
+            if (Player.Hp > 0 && pr.OwnerTeam != Player.Team && Hit(pr, Player))
+            {
+                // Apply shield effect - reduce damage if shield is active
+                int damage = Player.ShieldTime > 0 ? 5 : 10;
+                Player.Hp -= damage;
+                onExplosion?.Invoke(pr);
+                onPlayerHit?.Invoke();
+                Projectiles.RemoveAt(i);
+                continue;
+            }
             bool removed = false;
             for (int a = 0; a < Allies.Count && !removed; a++)
             {
@@ -360,6 +377,113 @@ public class BattlefieldService
     private bool Hit(Projectile pr, Tank t) => (pr.X - t.X) * (pr.X - t.X) + (pr.Y - t.Y) * (pr.Y - t.Y) < 22 * 22;
 
     private bool Hit(Projectile pr1, Projectile pr2) => (pr1.X - pr2.X) * (pr1.X - pr2.X) + (pr1.Y - pr2.Y) * (pr1.Y - pr2.Y) < 8 * 8;
+
+    private void UpdatePowerUps(double dt)
+    {
+        // Spawn power-ups at random intervals (every 8-15 seconds)
+        _powerUpSpawnTimer -= dt;
+        if (_powerUpSpawnTimer <= 0 && PowerUps.Count < 3) // Max 3 power-ups on field
+        {
+            SpawnRandomPowerUp();
+            _powerUpSpawnTimer = 8.0 + _rand.NextDouble() * 7.0; // 8-15 seconds
+        }
+
+        // Remove expired power-ups
+        for (int i = PowerUps.Count - 1; i >= 0; i--)
+        {
+            var powerUp = PowerUps[i];
+            powerUp.Duration -= dt;
+            if (powerUp.Duration <= 0)
+            {
+                PowerUps.RemoveAt(i);
+            }
+        }
+    }
+
+    private void SpawnRandomPowerUp()
+    {
+        // Find a position not too close to player or enemies
+        double x, y;
+        int attempts = 0;
+        do
+        {
+            x = _rand.NextDouble() * (WorldWidth - 400) + 200;
+            y = _rand.NextDouble() * (WorldHeight - 400) + 200;
+            attempts++;
+        }
+        while (attempts < 20 && (
+            // Too close to player
+            Math.Sqrt((x - Player.X) * (x - Player.X) + (y - Player.Y) * (y - Player.Y)) < 200 ||
+            // Too close to enemies
+            Enemies.Any(e => e.Hp > 0 && Math.Sqrt((x - e.X) * (x - e.X) + (y - e.Y) * (y - e.Y)) < 150) ||
+            // Too close to existing power-ups
+            PowerUps.Any(p => Math.Sqrt((x - p.X) * (x - p.X) + (y - p.Y) * (y - p.Y)) < 100)
+        ));
+
+        // Random power-up type
+        var types = Enum.GetValues<PowerUpType>();
+        var powerUp = new PowerUp
+        {
+            Id = _nextPowerUpId++,
+            X = x,
+            Y = y,
+            Type = types[_rand.Next(types.Length)],
+            SpawnTime = 0,
+            Duration = 30.0 // 30 seconds on battlefield
+        };
+
+        PowerUps.Add(powerUp);
+    }
+
+    private void CheckPowerUpCollisions()
+    {
+        for (int i = PowerUps.Count - 1; i >= 0; i--)
+        {
+            var powerUp = PowerUps[i];
+            double dx = powerUp.X - Player.X;
+            double dy = powerUp.Y - Player.Y;
+            double distanceSquared = dx * dx + dy * dy;
+
+            // Collision radius of 25 pixels
+            if (distanceSquared < 25 * 25)
+            {
+                ApplyPowerUpToPlayer(powerUp);
+                PowerUps.RemoveAt(i);
+            }
+        }
+    }
+
+    private void ApplyPowerUpToPlayer(PowerUp powerUp)
+    {
+        switch (powerUp.Type)
+        {
+            case PowerUpType.Health:
+                Player.Hp = Math.Min(100, Player.Hp + 30); // Restore 30 HP, max 100
+                break;
+            case PowerUpType.Shield:
+                Player.ShieldTime = 15.0; // 15 seconds of shield
+                break;
+            case PowerUpType.FirePower:
+                Player.FirePowerTime = 12.0; // 12 seconds of faster firing
+                break;
+            case PowerUpType.Speed:
+                Player.SpeedBoostTime = 10.0; // 10 seconds of speed boost
+                break;
+        }
+    }
+
+    private void UpdatePlayerEffects(double dt)
+    {
+        // Countdown power-up effects
+        if (Player.ShieldTime > 0) Player.ShieldTime -= dt;
+        if (Player.FirePowerTime > 0) Player.FirePowerTime -= dt;
+        if (Player.SpeedBoostTime > 0) Player.SpeedBoostTime -= dt;
+
+        // Clamp to zero
+        if (Player.ShieldTime < 0) Player.ShieldTime = 0;
+        if (Player.FirePowerTime < 0) Player.FirePowerTime = 0;
+        if (Player.SpeedBoostTime < 0) Player.SpeedBoostTime = 0;
+    }
 
     private void ClampToWorld(Tank t)
     {

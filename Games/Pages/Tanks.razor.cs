@@ -56,7 +56,7 @@ public partial class Tanks : ComponentBase, IAsyncDisposable
         HandleInput(dt);
         Battlefield.Update(dt, pr => _ = JS.InvokeVoidAsync("tankGame.addExplosion", pr.X, pr.Y), () => _ = JS.InvokeVoidAsync("tankGame.vibrate"));
         var livingOthers = Battlefield.Allies.Where(a => a.Hp > 0).Cast<Tank>().Concat(Battlefield.Enemies.Where(e => e.Hp > 0)).ToList();
-        await JS.InvokeVoidAsync("tankGame.draw", Battlefield.Player, livingOthers, Battlefield.Projectiles, Battlefield.CameraX, Battlefield.CameraY);
+        await JS.InvokeVoidAsync("tankGame.draw", Battlefield.Player, livingOthers, Battlefield.Projectiles, Battlefield.CameraX, Battlefield.CameraY, Battlefield.PowerUps);
         if (Battlefield.Player.Hp <= 0 || Battlefield.EnemiesRemaining == 0)
         {
             _running = false; bool playerWon = Battlefield.Player.Hp > 0 && Battlefield.EnemiesRemaining == 0;
