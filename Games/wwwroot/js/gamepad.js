@@ -150,10 +150,10 @@ window.tankGame = (function(){
     drawExplosions(cameraX, cameraY);
     
     // Draw radar
-    drawRadar(player, enemy, cameraX, cameraY);
+    drawRadar(player, enemy, cameraX, cameraY, powerUps);
   }
   
-  function drawRadar(player, enemy, cameraX, cameraY) {
+  function drawRadar(player, enemy, cameraX, cameraY, powerUps) {
     if (!radarCtx || !radarCanvas) return;
     
     // World dimensions (from BattlefieldService)
@@ -185,6 +185,40 @@ window.tankGame = (function(){
     radarCtx.strokeStyle = '#666';
     radarCtx.lineWidth = 1;
     radarCtx.strokeRect(viewportX, viewportY, viewportWidth, viewportHeight);
+    
+    // Draw power-ups (colored squares)
+    if (powerUps && Array.isArray(powerUps)) {
+      powerUps.forEach(powerUp => {
+        const powerUpX = powerUp.x * scaleX;
+        const powerUpY = powerUp.y * scaleY;
+        
+        // Set color based on power-up type
+        switch (powerUp.type) {
+          case 0: // Health
+            radarCtx.fillStyle = '#22FF22';
+            break;
+          case 1: // Shield
+            radarCtx.fillStyle = '#2222FF';
+            break;
+          case 2: // FirePower
+            radarCtx.fillStyle = '#FF2222';
+            break;
+          case 3: // Speed
+            radarCtx.fillStyle = '#FFFF22';
+            break;
+          default:
+            radarCtx.fillStyle = '#FFFFFF';
+        }
+        
+        // Draw power-up as a small diamond
+        const size = 2;
+        radarCtx.save();
+        radarCtx.translate(powerUpX, powerUpY);
+        radarCtx.rotate(Math.PI / 4); // 45 degree rotation for diamond
+        radarCtx.fillRect(-size, -size, size * 2, size * 2);
+        radarCtx.restore();
+      });
+    }
     
     // Draw player position (green dot)
     if (player && (player.hp > 0 || player.Hp > 0 || player.hp === undefined)) {

@@ -380,12 +380,12 @@ public class BattlefieldService
 
     private void UpdatePowerUps(double dt)
     {
-        // Spawn power-ups at random intervals (every 8-15 seconds)
+        // Spawn power-ups at random intervals (every 4-8 seconds)
         _powerUpSpawnTimer -= dt;
-        if (_powerUpSpawnTimer <= 0 && PowerUps.Count < 3) // Max 3 power-ups on field
+        if (_powerUpSpawnTimer <= 0 && PowerUps.Count < 6) // Max 6 power-ups on field
         {
             SpawnRandomPowerUp();
-            _powerUpSpawnTimer = 8.0 + _rand.NextDouble() * 7.0; // 8-15 seconds
+            _powerUpSpawnTimer = 4.0 + _rand.NextDouble() * 4.0; // 4-8 seconds
         }
 
         // Remove expired power-ups
