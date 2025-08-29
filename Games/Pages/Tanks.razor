@@ -4,6 +4,14 @@
 <div id="tankGameContainer" class="tank-game-container">
     <div class="hud-hp">
         Player HP: @Battlefield.Player.Hp | Level: @Battlefield.Player.Level | XP: @Battlefield.Player.Xp/@Battlefield.GetXpForNextLevel() | Enemies: @Battlefield.EnemiesRemaining
+        @if (!string.IsNullOrEmpty(Battlefield.LastXpGain))
+        {
+            <span class="badge bg-success ms-2">@Battlefield.LastXpGain</span>
+        }
+        @if (!string.IsNullOrEmpty(Battlefield.LastLevelUp))
+        {
+            <span class="badge bg-warning ms-2">⭐ @Battlefield.LastLevelUp</span>
+        }
         @if (Battlefield.Player.ShieldTime > 0)
         {
             <span class="badge bg-primary ms-2">🛡️ @((int)Battlefield.Player.ShieldTime)s</span>

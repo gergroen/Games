@@ -35,6 +35,12 @@ public class BattlefieldService
     private readonly double _enemyRespawnInterval = 8.0; // Respawn enemy every 8 seconds
     private readonly int _maxEnemies = 8; // Increased max enemies for more challenge
 
+    // Visual feedback system
+    public string LastXpGain { get; private set; } = "";
+    public string LastLevelUp { get; private set; } = "";
+    private double _xpDisplayTimer = 0;
+    private double _levelUpDisplayTimer = 0;
+
     public int EnemiesRemaining => Enemies.Count(e => e.Hp > 0);
     public int AlliesAlive => Allies.Count(a => a.Hp > 0);
 
@@ -45,13 +51,13 @@ public class BattlefieldService
         _canFire = true; _fireCooldown = 0;
         _powerUpSpawnTimer = 0; _nextPowerUpId = 1;
         _enemyRespawnTimer = 0;
-        
+
         // Preserve XP and level across resets
         var currentXp = Player.Xp;
         var currentLevel = Player.Level;
-        
+
         SpawnTeams();
-        
+
         // Restore XP and level after respawning
         Player.Xp = currentXp;
         Player.Level = currentLevel;
@@ -127,6 +133,7 @@ public class BattlefieldService
         CheckCollisions(onExplosion, onPlayerHit);
         CheckPowerUpCollisions();
         UpdateEnemyRespawn(dt);
+        UpdateNotifications(dt);
         ApplySeparation();
         UpdatePlayerEffects(dt);
         _fireCooldown -= dt; if (_fireCooldown <= 0) _canFire = true;
@@ -351,15 +358,15 @@ public class BattlefieldService
             if (removed) continue;
             for (int e = 0; e < Enemies.Count && !removed; e++)
             {
-                var en = Enemies[e]; 
-                if (en.Hp <= 0 || en.Team == pr.OwnerTeam) continue; 
-                if (Hit(pr, en)) 
-                { 
-                    en.Hp -= 10; 
-                    onExplosion?.Invoke(pr); 
-                    Projectiles.RemoveAt(i); 
+                var en = Enemies[e];
+                if (en.Hp <= 0 || en.Team == pr.OwnerTeam) continue;
+                if (Hit(pr, en))
+                {
+                    en.Hp -= 10;
+                    onExplosion?.Invoke(pr);
+                    Projectiles.RemoveAt(i);
                     removed = true;
-                    
+
                     // Award XP if enemy was killed by player projectile
                     if (en.Hp <= 0 && pr.OwnerTeam == Team.Player)
                     {
@@ -501,7 +508,7 @@ public class BattlefieldService
                 Player.SpeedBoostTime = 10.0; // 10 seconds of speed boost
                 break;
         }
-        
+
         // Award XP for collecting power-up
         AddXp(5); // 5 XP per power-up collected
     }
@@ -537,10 +544,16 @@ public class BattlefieldService
         var oldLevel = Player.Level;
         Player.Xp += xp;
         Player.Level = CalculateLevel(Player.Xp);
-        
+
+        // Show XP gain notification
+        LastXpGain = $"+{xp} XP";
+        _xpDisplayTimer = 2.0; // Show for 2 seconds
+
         // Apply level benefits if leveled up
         if (Player.Level > oldLevel)
         {
+            LastLevelUp = $"LEVEL UP! Level {Player.Level}";
+            _levelUpDisplayTimer = 3.0; // Show for 3 seconds
             ApplyLevelBenefits();
         }
     }
@@ -566,10 +579,10 @@ public class BattlefieldService
         // Increase max HP by 10 per level, restore to full
         int baseHp = 100 + (Player.Level - 1) * 10;
         Player.Hp = Math.Min(Player.Hp + 20, baseHp); // Heal 20 HP on level up, cap at max
-        
+
         // Increase speed by 5 per level
         Player.Speed = 110 + (Player.Level - 1) * 5;
-        
+
         // Decrease firing cooldown by 0.02 per level (faster firing)
         Player.BasePowerCooldown = Math.Max(0.15, 0.35 - (Player.Level - 1) * 0.02);
     }
@@ -578,7 +591,7 @@ public class BattlefieldService
     private void UpdateEnemyRespawn(double dt)
     {
         _enemyRespawnTimer -= dt;
-        
+
         int livingEnemies = Enemies.Count(e => e.Hp > 0);
         if (_enemyRespawnTimer <= 0 && livingEnemies < _maxEnemies)
         {
@@ -590,7 +603,7 @@ public class BattlefieldService
     private void SpawnNewEnemy()
     {
         var behaviors = new[] { EnemyBehavior.Aggressive, EnemyBehavior.Shy, EnemyBehavior.Circler, EnemyBehavior.Sniper, EnemyBehavior.Wanderer, EnemyBehavior.Flanker };
-        
+
         double x, y;
         int attempts = 0;
 
@@ -623,5 +636,15 @@ public class BattlefieldService
         };
 
         Enemies.Add(enemy);
+    }
+
+    // Update notification timers
+    private void UpdateNotifications(double dt)
+    {
+        _xpDisplayTimer -= dt;
+        _levelUpDisplayTimer -= dt;
+
+        if (_xpDisplayTimer <= 0) LastXpGain = "";
+        if (_levelUpDisplayTimer <= 0) LastLevelUp = "";
     }
 }

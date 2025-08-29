@@ -24,7 +24,7 @@ public class Tank
     /// <summary>
     /// Gets the effective speed based on current HP and speed boosts. Tanks move slower as they take damage.
     /// </summary>
-    public double EffectiveSpeed 
+    public double EffectiveSpeed
     {
         get
         {
@@ -44,7 +44,7 @@ public class PlayerTank : Tank
 {
     public int Xp { get; set; } = 0;
     public int Level { get; set; } = 1;
-    
+
     public PlayerTank() { Team = Team.Player; IsPlayer = true; }
 }
 
