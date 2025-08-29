@@ -3,7 +3,7 @@
 
 <div id="tankGameContainer" class="tank-game-container">
     <div class="hud-hp">
-        Player HP: @Battlefield.Player.Hp | Level: @Battlefield.Player.Level | XP: @Battlefield.Player.Xp/@Battlefield.GetXpForNextLevel() | Enemies: @Battlefield.EnemiesRemaining
+        Player HP: @Battlefield.Player.Hp | Level: @Battlefield.Player.Level | XP: @Battlefield.Player.Xp/@Battlefield.GetXpForNextLevel() | Enemies Remaining: @Battlefield.EnemiesRemaining
         @if (!string.IsNullOrEmpty(Battlefield.LastXpGain))
         {
             <span class="badge bg-success ms-2">@Battlefield.LastXpGain</span>
