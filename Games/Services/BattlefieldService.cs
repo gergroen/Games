@@ -266,7 +266,25 @@ public class BattlefieldService
         }
 
         enemy.X += moveVX * enemy.EffectiveSpeed * dt; enemy.Y += moveVY * enemy.EffectiveSpeed * dt; ClampToWorld(enemy);
-        enemy.NextFireTimer -= dt; if (enemy.NextFireTimer <= 0) { Fire(enemy); enemy.NextFireTimer = enemy.Behavior == EnemyBehavior.Sniper ? 1.3 + _rand.NextDouble() * 1.0 : 0.8 + _rand.NextDouble() * 0.7; }
+
+        // Only fire when enemy is within engagement range based on their behavior
+        bool inEngagementRange = enemy.Behavior switch
+        {
+            EnemyBehavior.Aggressive => dist <= 200,
+            EnemyBehavior.Shy => dist <= 260,
+            EnemyBehavior.Circler => dist <= 170,
+            EnemyBehavior.Sniper => dist <= 300,
+            EnemyBehavior.Wanderer => dist <= 150,
+            EnemyBehavior.Flanker => dist <= 200,
+            _ => false
+        };
+
+        enemy.NextFireTimer -= dt;
+        if (enemy.NextFireTimer <= 0 && inEngagementRange)
+        {
+            Fire(enemy);
+            enemy.NextFireTimer = enemy.Behavior == EnemyBehavior.Sniper ? 1.3 + _rand.NextDouble() * 1.0 : 0.8 + _rand.NextDouble() * 0.7;
+        }
     }
 
     public void Fire(Tank t)
