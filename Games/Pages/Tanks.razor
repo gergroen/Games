@@ -10,11 +10,11 @@
         }
         @if (Battlefield.Player.FirePowerTime > 0)
         {
-            <span class="badge bg-danger ms-2">⚔️ @((int)Battlefield.Player.FirePowerTime)s</span>
+            <span class="badge bg-danger ms-2">🔫 @((int)Battlefield.Player.FirePowerTime)s</span>
         }
         @if (Battlefield.Player.SpeedBoostTime > 0)
         {
-            <span class="badge bg-warning ms-2">💨 @((int)Battlefield.Player.SpeedBoostTime)s</span>
+            <span class="badge bg-warning ms-2">⚡️ @((int)Battlefield.Player.SpeedBoostTime)s</span>
         }
         <button class="btn btn-sm btn-primary ms-2 btn-icon" @onclick="Restart" title="Restart"
             aria-label="Restart">&#x21bb;</button>
