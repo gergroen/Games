@@ -186,29 +186,14 @@ window.tankGame = (function(){
     radarCtx.lineWidth = 1;
     radarCtx.strokeRect(viewportX, viewportY, viewportWidth, viewportHeight);
     
-    // Draw power-ups (colored squares)
+    // Draw power-ups (all yellow diamonds)
     if (powerUps && Array.isArray(powerUps)) {
       powerUps.forEach(powerUp => {
         const powerUpX = powerUp.x * scaleX;
         const powerUpY = powerUp.y * scaleY;
         
-        // Set color based on power-up type
-        switch (powerUp.type) {
-          case 0: // Health
-            radarCtx.fillStyle = '#22FF22';
-            break;
-          case 1: // Shield
-            radarCtx.fillStyle = '#2222FF';
-            break;
-          case 2: // FirePower
-            radarCtx.fillStyle = '#FF2222';
-            break;
-          case 3: // Speed
-            radarCtx.fillStyle = '#FFFF22';
-            break;
-          default:
-            radarCtx.fillStyle = '#FFFFFF';
-        }
+        // All power-ups are yellow on radar
+        radarCtx.fillStyle = '#FFFF22';
         
         // Draw power-up as a small diamond
         const size = 2;
@@ -383,28 +368,9 @@ window.tankGame = (function(){
       ctx.save();
       ctx.translate(screenX, screenY);
       
-      // Draw power-up based on type
-      switch (powerUp.type) {
-        case 0: // Health
-          ctx.fillStyle = '#22FF22';
-          ctx.strokeStyle = '#00AA00';
-          break;
-        case 1: // Shield
-          ctx.fillStyle = '#2222FF';
-          ctx.strokeStyle = '#0000AA';
-          break;
-        case 2: // FirePower
-          ctx.fillStyle = '#FF2222';
-          ctx.strokeStyle = '#AA0000';
-          break;
-        case 3: // Speed
-          ctx.fillStyle = '#FFFF22';
-          ctx.strokeStyle = '#AAAA00';
-          break;
-        default:
-          ctx.fillStyle = '#FFFFFF';
-          ctx.strokeStyle = '#AAAAAA';
-      }
+      // Draw power-up based on type (all yellow)
+      ctx.fillStyle = '#FFFF22';
+      ctx.strokeStyle = '#AAAA00';
       
       // Draw diamond shape
       ctx.lineWidth = 2;
@@ -425,10 +391,10 @@ window.tankGame = (function(){
       
       let symbol = '?';
       switch (powerUp.type) {
-        case 0: symbol = '+'; break; // Health
-        case 1: symbol = '⚡'; break; // Shield
-        case 2: symbol = '⚔'; break; // FirePower
-        case 3: symbol = '⟩'; break; // Speed
+        case 0: symbol = '❤️'; break; // Health
+        case 1: symbol = '🛡'; break; // Shield  
+        case 2: symbol = '🔫'; break; // FirePower
+        case 3: symbol = '⚡️'; break; // Speed
       }
       
       ctx.fillText(symbol, 0, 0);
