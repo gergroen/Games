@@ -72,5 +72,5 @@ public class PowerUp
     public double Y { get; set; }
     public PowerUpType Type { get; set; }
     public double SpawnTime { get; set; }
-    public double Duration { get; set; } = 30.0; // How long it stays on battlefield
+    public double Duration { get; set; } = 60.0; // How long it stays on battlefield
 }

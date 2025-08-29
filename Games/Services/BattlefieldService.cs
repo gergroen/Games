@@ -429,7 +429,7 @@ public class BattlefieldService
             Y = y,
             Type = types[_rand.Next(types.Length)],
             SpawnTime = 0,
-            Duration = 30.0 // 30 seconds on battlefield
+            Duration = 60.0 // 60 seconds on battlefield
         };
 
         PowerUps.Add(powerUp);
