@@ -24,7 +24,15 @@ public class Tank
     /// <summary>
     /// Gets the effective speed based on current HP and speed boosts. Tanks move slower as they take damage.
     /// </summary>
-    public double EffectiveSpeed => Speed * (Hp / 100.0) * (SpeedBoostTime > 0 ? 1.5 : 1.0);
+    public double EffectiveSpeed
+    {
+        get
+        {
+            // Calculate max HP based on level for player tanks
+            double maxHp = IsPlayer && this is PlayerTank player ? 100 + (player.Level - 1) * 10 : 100;
+            return Speed * (Hp / maxHp) * (SpeedBoostTime > 0 ? 1.5 : 1.0);
+        }
+    }
 
     /// <summary>
     /// Gets the effective firing cooldown with fire power boost.
@@ -34,6 +42,9 @@ public class Tank
 
 public class PlayerTank : Tank
 {
+    public int Xp { get; set; } = 0;
+    public int Level { get; set; } = 1;
+
     public PlayerTank() { Team = Team.Player; IsPlayer = true; }
 }
 
