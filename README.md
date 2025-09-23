@@ -339,7 +339,7 @@ This project is open source. Please refer to the repository for license details.
 
 ## 🎮 Live Demo
 
-Visit the live application: [Games on Azure Static Web Apps](https://mango-field-043ea0c03.3.azurestaticapps.net/)
+Visit the live application: [Games on Azure Static Web Apps](https://mango-field-043ea0c03.2.azurestaticapps.net/)
 
 ---
 
